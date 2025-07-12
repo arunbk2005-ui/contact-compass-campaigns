@@ -1,4 +1,5 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { supabase } from "@/integrations/supabase/client"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -21,69 +22,92 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
-const mockContacts = [
-  {
-    id: 1,
-    name: "Sarah Johnson",
-    email: "sarah.johnson@techcorp.com",
-    phone: "+1 (555) 123-4567",
-    company: "TechCorp Inc.",
-    position: "Marketing Director",
-    status: "active",
-    lastContact: "2 days ago"
-  },
-  {
-    id: 2,
-    name: "Michael Chen",
-    email: "m.chen@innovate.com",
-    phone: "+1 (555) 987-6543",
-    company: "Innovate Solutions",
-    position: "VP of Sales",
-    status: "engaged",
-    lastContact: "1 week ago"
-  },
-  {
-    id: 3,
-    name: "Emily Rodriguez",
-    email: "emily.r@startupx.io",
-    phone: "+1 (555) 456-7890",
-    company: "StartupX",
-    position: "CEO",
-    status: "cold",
-    lastContact: "3 weeks ago"
-  },
-  {
-    id: 4,
-    name: "David Thompson",
-    email: "david@enterprise.co",
-    phone: "+1 (555) 321-0987",
-    company: "Enterprise Co.",
-    position: "Head of Operations",
-    status: "active",
-    lastContact: "5 days ago"
-  }
-]
+interface Contact {
+  contact_id: number
+  company_id: number | null
+  first_name: string | null
+  last_name: string | null
+  designation: string | null
+  department: string | null
+  job_level: string | null
+  specialization: string | null
+  official_email_id: string | null
+  personal_email_id: string | null
+  direct_phone_number: string | null
+  mobile_number: string | null
+  gender: string | null
+  salute: string | null
+  company_name?: string | null
+}
 
 const Contacts = () => {
   const [searchTerm, setSearchTerm] = useState("")
-  const [filterStatus, setFilterStatus] = useState("all")
+  const [contacts, setContacts] = useState<Contact[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "active": return "bg-success text-success-foreground"
-      case "engaged": return "bg-primary text-primary-foreground"
-      case "cold": return "bg-muted text-muted-foreground"
-      default: return "bg-muted text-muted-foreground"
+  useEffect(() => {
+    fetchContacts()
+  }, [])
+
+  const fetchContacts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('contact_master')
+        .select(`
+          *,
+          organisation_master!contact_master_company_id_fkey(company_name)
+        `)
+        .order('first_name')
+      
+      if (error) throw error
+      
+      const contactsWithCompany = data?.map(contact => ({
+        ...contact,
+        company_name: contact.organisation_master?.company_name
+      })) || []
+      
+      setContacts(contactsWithCompany)
+    } catch (error) {
+      console.error('Error fetching contacts:', error)
+    } finally {
+      setLoading(false)
     }
   }
 
-  const filteredContacts = mockContacts.filter(contact => {
-    const matchesSearch = contact.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         contact.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         contact.company.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesFilter = filterStatus === "all" || contact.status === filterStatus
-    return matchesSearch && matchesFilter
+  const getFullName = (contact: Contact) => {
+    const salute = contact.salute ? `${contact.salute} ` : ''
+    const firstName = contact.first_name || ''
+    const lastName = contact.last_name || ''
+    return `${salute}${firstName} ${lastName}`.trim() || 'No Name'
+  }
+
+  const getEmail = (contact: Contact) => {
+    return contact.official_email_id || contact.personal_email_id || 'No email'
+  }
+
+  const getPhone = (contact: Contact) => {
+    return contact.mobile_number || contact.direct_phone_number || 'No phone'
+  }
+
+  const filteredContacts = contacts.filter(contact => {
+    const fullName = getFullName(contact).toLowerCase()
+    const email = getEmail(contact).toLowerCase()
+    const company = contact.company_name?.toLowerCase() || ''
+    
+    return fullName.includes(searchTerm.toLowerCase()) ||
+           email.includes(searchTerm.toLowerCase()) ||
+           company.includes(searchTerm.toLowerCase())
   })
+
+  if (loading) {
+    return (
+      <div className="p-6 space-y-6">
+        <div className="text-center py-8">
+          <p className="text-muted-foreground">Loading contacts...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -116,28 +140,14 @@ const Contacts = () => {
               />
             </div>
             
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="gap-2">
-                  <Filter className="w-4 h-4" />
-                  Filter Status
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem onClick={() => setFilterStatus("all")}>
-                  All Contacts
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setFilterStatus("active")}>
-                  Active
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setFilterStatus("engaged")}>
-                  Engaged
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setFilterStatus("cold")}>
-                  Cold
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <Button 
+              variant="outline" 
+              className="gap-2"
+              onClick={fetchContacts}
+            >
+              <Filter className="w-4 h-4" />
+              Refresh
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -145,13 +155,13 @@ const Contacts = () => {
       {/* Contacts Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredContacts.map((contact) => (
-          <Card key={contact.id} className="transition-all duration-200 hover:shadow-lg">
+          <Card key={contact.contact_id} className="transition-all duration-200 hover:shadow-lg">
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
                 <div>
-                  <CardTitle className="text-lg">{contact.name}</CardTitle>
+                  <CardTitle className="text-lg">{getFullName(contact)}</CardTitle>
                   <CardDescription className="text-sm">
-                    {contact.position}
+                    {contact.designation || contact.job_level || 'Position not specified'}
                   </CardDescription>
                 </div>
                 
@@ -178,27 +188,32 @@ const Contacts = () => {
             <CardContent className="space-y-3">
               <div className="flex items-center gap-2 text-sm">
                 <Building2 className="w-4 h-4 text-muted-foreground" />
-                <span className="text-foreground">{contact.company}</span>
+                <span className="text-foreground">{contact.company_name || 'Company not specified'}</span>
               </div>
+              
+              {contact.department && (
+                <div className="text-sm">
+                  <span className="text-muted-foreground">Department: </span>
+                  <span className="text-foreground">{contact.department}</span>
+                </div>
+              )}
               
               <div className="flex items-center gap-2 text-sm">
                 <Mail className="w-4 h-4 text-muted-foreground" />
-                <span className="text-foreground truncate">{contact.email}</span>
+                <span className="text-foreground truncate">{getEmail(contact)}</span>
               </div>
               
               <div className="flex items-center gap-2 text-sm">
                 <Phone className="w-4 h-4 text-muted-foreground" />
-                <span className="text-foreground">{contact.phone}</span>
+                <span className="text-foreground">{getPhone(contact)}</span>
               </div>
               
-              <div className="flex items-center justify-between pt-2">
-                <Badge className={getStatusColor(contact.status)}>
-                  {contact.status}
-                </Badge>
-                <span className="text-xs text-muted-foreground">
-                  Last contact: {contact.lastContact}
-                </span>
-              </div>
+              {contact.specialization && (
+                <div className="text-sm">
+                  <span className="text-muted-foreground">Specialization: </span>
+                  <span className="text-foreground">{contact.specialization}</span>
+                </div>
+              )}
 
               <div className="flex gap-2 pt-2">
                 <Button variant="outline" size="sm" className="flex-1">
@@ -221,22 +236,18 @@ const Contacts = () => {
           <CardTitle>Contact Summary</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="text-center p-4 border border-border rounded-lg">
-              <div className="text-2xl font-bold text-foreground">{mockContacts.length}</div>
+              <div className="text-2xl font-bold text-foreground">{contacts.length}</div>
               <div className="text-sm text-muted-foreground">Total Contacts</div>
             </div>
             <div className="text-center p-4 border border-border rounded-lg">
-              <div className="text-2xl font-bold text-success">{mockContacts.filter(c => c.status === 'active').length}</div>
-              <div className="text-sm text-muted-foreground">Active</div>
+              <div className="text-2xl font-bold text-success">{contacts.filter(c => c.official_email_id).length}</div>
+              <div className="text-sm text-muted-foreground">With Email</div>
             </div>
             <div className="text-center p-4 border border-border rounded-lg">
-              <div className="text-2xl font-bold text-primary">{mockContacts.filter(c => c.status === 'engaged').length}</div>
-              <div className="text-sm text-muted-foreground">Engaged</div>
-            </div>
-            <div className="text-center p-4 border border-border rounded-lg">
-              <div className="text-2xl font-bold text-muted-foreground">{mockContacts.filter(c => c.status === 'cold').length}</div>
-              <div className="text-sm text-muted-foreground">Cold</div>
+              <div className="text-2xl font-bold text-primary">{contacts.filter(c => c.mobile_number || c.direct_phone_number).length}</div>
+              <div className="text-sm text-muted-foreground">With Phone</div>
             </div>
           </div>
         </CardContent>

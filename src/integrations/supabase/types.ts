@@ -14,7 +14,137 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      city_master: {
+        Row: {
+          city: string | null
+          city_id: number
+          country: string | null
+          pincode: string | null
+          region: string | null
+          state: string | null
+        }
+        Insert: {
+          city?: string | null
+          city_id: number
+          country?: string | null
+          pincode?: string | null
+          region?: string | null
+          state?: string | null
+        }
+        Update: {
+          city?: string | null
+          city_id?: number
+          country?: string | null
+          pincode?: string | null
+          region?: string | null
+          state?: string | null
+        }
+        Relationships: []
+      }
+      contact_master: {
+        Row: {
+          company_id: number | null
+          contact_id: number
+          department: string | null
+          designation: string | null
+          direct_phone_number: string | null
+          first_name: string | null
+          gender: string | null
+          job_level: string | null
+          last_name: string | null
+          mobile_number: string | null
+          official_email_id: string | null
+          personal_email_id: string | null
+          salute: string | null
+          specialization: string | null
+        }
+        Insert: {
+          company_id?: number | null
+          contact_id: number
+          department?: string | null
+          designation?: string | null
+          direct_phone_number?: string | null
+          first_name?: string | null
+          gender?: string | null
+          job_level?: string | null
+          last_name?: string | null
+          mobile_number?: string | null
+          official_email_id?: string | null
+          personal_email_id?: string | null
+          salute?: string | null
+          specialization?: string | null
+        }
+        Update: {
+          company_id?: number | null
+          contact_id?: number
+          department?: string | null
+          designation?: string | null
+          direct_phone_number?: string | null
+          first_name?: string | null
+          gender?: string | null
+          job_level?: string | null
+          last_name?: string | null
+          mobile_number?: string | null
+          official_email_id?: string | null
+          personal_email_id?: string | null
+          salute?: string | null
+          specialization?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_master_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_master"
+            referencedColumns: ["company_id"]
+          },
+        ]
+      }
+      industry_master: {
+        Row: {
+          industry_id: number
+          industry_vertical: string | null
+          sub_vertical: string | null
+        }
+        Insert: {
+          industry_id: number
+          industry_vertical?: string | null
+          sub_vertical?: string | null
+        }
+        Update: {
+          industry_id?: number
+          industry_vertical?: string | null
+          sub_vertical?: string | null
+        }
+        Relationships: []
+      }
+      organisation_master: {
+        Row: {
+          annual_revenue: number | null
+          company_id: number
+          company_name: string | null
+          employees: number | null
+          headquarters: string | null
+          industry: string | null
+        }
+        Insert: {
+          annual_revenue?: number | null
+          company_id?: never
+          company_name?: string | null
+          employees?: number | null
+          headquarters?: string | null
+          industry?: string | null
+        }
+        Update: {
+          annual_revenue?: number | null
+          company_id?: never
+          company_name?: string | null
+          employees?: number | null
+          headquarters?: string | null
+          industry?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

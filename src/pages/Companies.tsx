@@ -1,4 +1,5 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { supabase } from "@/integrations/supabase/client"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -22,80 +23,83 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
-const mockCompanies = [
-  {
-    id: 1,
-    name: "TechCorp Inc.",
-    industry: "Technology",
-    size: "500-1000",
-    location: "San Francisco, CA",
-    website: "techcorp.com",
-    contacts: 15,
-    revenue: "$50M - $100M",
-    status: "active"
-  },
-  {
-    id: 2,
-    name: "Innovate Solutions",
-    industry: "SaaS",
-    size: "100-500",
-    location: "Austin, TX",
-    website: "innovate.com",
-    contacts: 8,
-    revenue: "$10M - $50M",
-    status: "prospect"
-  },
-  {
-    id: 3,
-    name: "StartupX",
-    industry: "Fintech",
-    size: "10-50",
-    location: "New York, NY",
-    website: "startupx.io",
-    contacts: 3,
-    revenue: "$1M - $10M",
-    status: "engaged"
-  },
-  {
-    id: 4,
-    name: "Enterprise Co.",
-    industry: "Manufacturing",
-    size: "1000+",
-    location: "Chicago, IL",
-    website: "enterprise.co",
-    contacts: 25,
-    revenue: "$100M+",
-    status: "active"
-  }
-]
+interface Company {
+  company_id: number
+  company_name: string | null
+  industry: string | null
+  employees: number | null
+  headquarters: string | null
+  annual_revenue: number | null
+}
 
 const Companies = () => {
   const [searchTerm, setSearchTerm] = useState("")
-  const [filterStatus, setFilterStatus] = useState("all")
+  const [companies, setCompanies] = useState<Company[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "active": return "bg-success text-success-foreground"
-      case "engaged": return "bg-primary text-primary-foreground"
-      case "prospect": return "bg-warning text-warning-foreground"
-      default: return "bg-muted text-muted-foreground"
+  useEffect(() => {
+    fetchCompanies()
+  }, [])
+
+  const fetchCompanies = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('organisation_master')
+        .select('*')
+        .order('company_name')
+      
+      if (error) throw error
+      setCompanies(data || [])
+    } catch (error) {
+      console.error('Error fetching companies:', error)
+    } finally {
+      setLoading(false)
     }
   }
 
-  const getSizeColor = (size: string) => {
-    if (size.includes("1000+")) return "text-success"
-    if (size.includes("500-1000")) return "text-primary"
-    if (size.includes("100-500")) return "text-accent"
+  const getSizeColor = (employees: number | null) => {
+    if (!employees) return "text-muted-foreground"
+    if (employees >= 1000) return "text-success"
+    if (employees >= 500) return "text-primary"
+    if (employees >= 100) return "text-accent"
     return "text-muted-foreground"
   }
 
-  const filteredCompanies = mockCompanies.filter(company => {
-    const matchesSearch = company.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         company.industry.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         company.location.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesFilter = filterStatus === "all" || company.status === filterStatus
-    return matchesSearch && matchesFilter
+  const formatEmployees = (employees: number | null) => {
+    if (!employees) return "Unknown"
+    if (employees >= 1000) return "1000+"
+    if (employees >= 500) return "500-999"
+    if (employees >= 100) return "100-499"
+    if (employees >= 50) return "50-99"
+    return "< 50"
+  }
+
+  const formatRevenue = (revenue: number | null) => {
+    if (!revenue) return "Not disclosed"
+    if (revenue >= 100000000) return "$100M+"
+    if (revenue >= 50000000) return "$50M - $100M"
+    if (revenue >= 10000000) return "$10M - $50M"
+    if (revenue >= 1000000) return "$1M - $10M"
+    return "< $1M"
+  }
+
+  const filteredCompanies = companies.filter(company => {
+    const matchesSearch = 
+      company.company_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      company.industry?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      company.headquarters?.toLowerCase().includes(searchTerm.toLowerCase())
+    return matchesSearch
   })
+
+  if (loading) {
+    return (
+      <div className="p-6 space-y-6">
+        <div className="text-center py-8">
+          <p className="text-muted-foreground">Loading companies...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -128,28 +132,14 @@ const Companies = () => {
               />
             </div>
             
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="gap-2">
-                  <Filter className="w-4 h-4" />
-                  Filter Status
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem onClick={() => setFilterStatus("all")}>
-                  All Companies
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setFilterStatus("active")}>
-                  Active
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setFilterStatus("engaged")}>
-                  Engaged
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setFilterStatus("prospect")}>
-                  Prospect
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <Button 
+              variant="outline" 
+              className="gap-2"
+              onClick={fetchCompanies}
+            >
+              <Filter className="w-4 h-4" />
+              Refresh
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -157,7 +147,7 @@ const Companies = () => {
       {/* Companies Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
         {filteredCompanies.map((company) => (
-          <Card key={company.id} className="transition-all duration-200 hover:shadow-lg">
+          <Card key={company.company_id} className="transition-all duration-200 hover:shadow-lg">
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
                 <div className="flex items-start gap-3">
@@ -165,9 +155,9 @@ const Companies = () => {
                     <Building2 className="w-6 h-6 text-primary-foreground" />
                   </div>
                   <div>
-                    <CardTitle className="text-lg">{company.name}</CardTitle>
+                    <CardTitle className="text-lg">{company.company_name || 'Unnamed Company'}</CardTitle>
                     <CardDescription className="text-sm">
-                      {company.industry}
+                      {company.industry || 'Industry not specified'}
                     </CardDescription>
                   </div>
                 </div>
@@ -197,43 +187,35 @@ const Companies = () => {
                 <div>
                   <div className="flex items-center gap-2 mb-1">
                     <Users className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">Size</span>
+                    <span className="text-muted-foreground">Employees</span>
                   </div>
-                  <span className={`font-medium ${getSizeColor(company.size)}`}>
-                    {company.size}
+                  <span className={`font-medium ${getSizeColor(company.employees)}`}>
+                    {formatEmployees(company.employees)}
                   </span>
                 </div>
                 
                 <div>
                   <div className="flex items-center gap-2 mb-1">
                     <Users className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">Contacts</span>
+                    <span className="text-muted-foreground">Count</span>
                   </div>
                   <span className="font-medium text-foreground">
-                    {company.contacts}
+                    {company.employees || 'N/A'}
                   </span>
                 </div>
               </div>
               
               <div className="flex items-center gap-2 text-sm">
                 <MapPin className="w-4 h-4 text-muted-foreground" />
-                <span className="text-foreground">{company.location}</span>
-              </div>
-              
-              <div className="flex items-center gap-2 text-sm">
-                <Globe className="w-4 h-4 text-muted-foreground" />
-                <span className="text-foreground">{company.website}</span>
+                <span className="text-foreground">{company.headquarters || 'Location not specified'}</span>
               </div>
               
               <div className="text-sm">
-                <span className="text-muted-foreground">Revenue: </span>
-                <span className="font-medium text-foreground">{company.revenue}</span>
+                <span className="text-muted-foreground">Annual Revenue: </span>
+                <span className="font-medium text-foreground">{formatRevenue(company.annual_revenue)}</span>
               </div>
               
-              <div className="flex items-center justify-between pt-2">
-                <Badge className={getStatusColor(company.status)}>
-                  {company.status}
-                </Badge>
+              <div className="flex items-center justify-end pt-2">
                 <Button variant="outline" size="sm">
                   View Details
                 </Button>
@@ -249,22 +231,18 @@ const Companies = () => {
           <CardTitle>Company Portfolio</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="text-center p-4 border border-border rounded-lg">
-              <div className="text-2xl font-bold text-foreground">{mockCompanies.length}</div>
+              <div className="text-2xl font-bold text-foreground">{companies.length}</div>
               <div className="text-sm text-muted-foreground">Total Companies</div>
             </div>
             <div className="text-center p-4 border border-border rounded-lg">
-              <div className="text-2xl font-bold text-success">{mockCompanies.filter(c => c.status === 'active').length}</div>
-              <div className="text-sm text-muted-foreground">Active</div>
+              <div className="text-2xl font-bold text-success">{companies.filter(c => c.employees && c.employees >= 500).length}</div>
+              <div className="text-sm text-muted-foreground">Large Companies</div>
             </div>
             <div className="text-center p-4 border border-border rounded-lg">
-              <div className="text-2xl font-bold text-primary">{mockCompanies.filter(c => c.status === 'engaged').length}</div>
-              <div className="text-sm text-muted-foreground">Engaged</div>
-            </div>
-            <div className="text-center p-4 border border-border rounded-lg">
-              <div className="text-2xl font-bold text-warning">{mockCompanies.filter(c => c.status === 'prospect').length}</div>
-              <div className="text-sm text-muted-foreground">Prospects</div>
+              <div className="text-2xl font-bold text-primary">{companies.filter(c => c.annual_revenue && c.annual_revenue >= 10000000).length}</div>
+              <div className="text-sm text-muted-foreground">High Revenue</div>
             </div>
           </div>
         </CardContent>
