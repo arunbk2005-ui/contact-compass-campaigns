@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react"
 import { supabase } from "@/integrations/supabase/client"
+import { AddCompanyDialog } from "@/components/forms/AddCompanyDialog"
+import { BulkUploadDialog } from "@/components/forms/BulkUploadDialog"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -112,10 +114,10 @@ const Companies = () => {
           </p>
         </div>
         
-        <Button className="gap-2">
-          <Plus className="w-4 h-4" />
-          Add Company
-        </Button>
+        <div className="flex gap-2">
+          <AddCompanyDialog onCompanyAdded={fetchCompanies} />
+          <BulkUploadDialog onUploadComplete={fetchCompanies} />
+        </div>
       </div>
 
       {/* Search and Filters */}

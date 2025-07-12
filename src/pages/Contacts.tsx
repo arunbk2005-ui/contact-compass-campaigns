@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react"
 import { supabase } from "@/integrations/supabase/client"
+import { AddContactDialog } from "@/components/forms/AddContactDialog"
+import { BulkUploadDialog } from "@/components/forms/BulkUploadDialog"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -43,10 +45,12 @@ interface Contact {
 const Contacts = () => {
   const [searchTerm, setSearchTerm] = useState("")
   const [contacts, setContacts] = useState<Contact[]>([])
+  const [companies, setCompanies] = useState<Array<{ company_id: number; company_name: string | null }>>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     fetchContacts()
+    fetchCompanies()
   }, [])
 
   const fetchContacts = async () => {
@@ -71,6 +75,20 @@ const Contacts = () => {
       console.error('Error fetching contacts:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchCompanies = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('organisation_master')
+        .select('company_id, company_name')
+        .order('company_name')
+      
+      if (error) throw error
+      setCompanies(data || [])
+    } catch (error) {
+      console.error('Error fetching companies:', error)
     }
   }
 
@@ -120,10 +138,10 @@ const Contacts = () => {
           </p>
         </div>
         
-        <Button className="gap-2">
-          <Plus className="w-4 h-4" />
-          Add Contact
-        </Button>
+        <div className="flex gap-2">
+          <AddContactDialog onContactAdded={fetchContacts} companies={companies} />
+          <BulkUploadDialog onUploadComplete={fetchContacts} />
+        </div>
       </div>
 
       {/* Search and Filters */}
