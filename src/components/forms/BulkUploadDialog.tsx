@@ -62,14 +62,35 @@ export function BulkUploadDialog({ onUploadComplete }: BulkUploadDialogProps) {
         }
       ]
     } else {
-      headers = ["company_name", "industry", "employees", "headquarters", "annual_revenue"]
+      headers = [
+        "company_name", "industry", "headquarters", "employees", "annual_revenue",
+        "address_type", "postal_address_1", "postal_address_2", "postal_address_3",
+        "std", "phone_1", "phone_2", "fax", "company_mobile_number", 
+        "common_email_id", "website", "no_of_employees_total", "turn_over_inr_cr",
+        "no_of_offices_total", "no_of_branch_offices"
+      ]
       sampleData = [
         {
           company_name: "Tech Corp Inc.",
           industry: "Technology",
-          employees: 500,
           headquarters: "San Francisco, CA",
-          annual_revenue: 50000000
+          employees: 500,
+          annual_revenue: 50000000,
+          address_type: "Corporate",
+          postal_address_1: "123 Tech Street",
+          postal_address_2: "Suite 100",
+          postal_address_3: "Building A",
+          std: "022",
+          phone_1: "+1-555-0123",
+          phone_2: "+1-555-0124",
+          fax: "+1-555-0125",
+          company_mobile_number: "+1-555-0126",
+          common_email_id: "info@techcorp.com",
+          website: "https://techcorp.com",
+          no_of_employees_total: 500,
+          turn_over_inr_cr: 100.5,
+          no_of_offices_total: 5,
+          no_of_branch_offices: 4
         }
       ]
     }
@@ -127,9 +148,24 @@ export function BulkUploadDialog({ onUploadComplete }: BulkUploadDialogProps) {
         processedData = jsonData.map((row: any) => ({
           company_name: row.company_name || null,
           industry: row.industry || null,
-          employees: row.employees ? parseInt(row.employees) : null,
           headquarters: row.headquarters || null,
+          employees: row.employees ? parseInt(row.employees) : null,
           annual_revenue: row.annual_revenue ? parseFloat(row.annual_revenue) : null,
+          address_type: row.address_type || null,
+          postal_address_1: row.postal_address_1 || null,
+          postal_address_2: row.postal_address_2 || null,
+          postal_address_3: row.postal_address_3 || null,
+          std: row.std || null,
+          phone_1: row.phone_1 || null,
+          phone_2: row.phone_2 || null,
+          fax: row.fax || null,
+          company_mobile_number: row.company_mobile_number || null,
+          common_email_id: row.common_email_id || null,
+          website: row.website || null,
+          no_of_employees_total: row.no_of_employees_total ? parseInt(row.no_of_employees_total) : null,
+          turn_over_inr_cr: row.turn_over_inr_cr ? parseFloat(row.turn_over_inr_cr) : null,
+          no_of_offices_total: row.no_of_offices_total ? parseInt(row.no_of_offices_total) : null,
+          no_of_branch_offices: row.no_of_branch_offices ? parseInt(row.no_of_branch_offices) : null,
         }))
       }
 

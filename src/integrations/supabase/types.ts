@@ -120,28 +120,73 @@ export type Database = {
       }
       organisation_master: {
         Row: {
+          address_type: string | null
           annual_revenue: number | null
+          common_email_id: string | null
           company_id: number
+          company_mobile_number: string | null
           company_name: string | null
           employees: number | null
+          fax: string | null
           headquarters: string | null
           industry: string | null
+          no_of_branch_offices: number | null
+          no_of_employees_total: number | null
+          no_of_offices_total: number | null
+          phone_1: string | null
+          phone_2: string | null
+          postal_address_1: string | null
+          postal_address_2: string | null
+          postal_address_3: string | null
+          std: string | null
+          turn_over_inr_cr: number | null
+          website: string | null
         }
         Insert: {
+          address_type?: string | null
           annual_revenue?: number | null
+          common_email_id?: string | null
           company_id?: never
+          company_mobile_number?: string | null
           company_name?: string | null
           employees?: number | null
+          fax?: string | null
           headquarters?: string | null
           industry?: string | null
+          no_of_branch_offices?: number | null
+          no_of_employees_total?: number | null
+          no_of_offices_total?: number | null
+          phone_1?: string | null
+          phone_2?: string | null
+          postal_address_1?: string | null
+          postal_address_2?: string | null
+          postal_address_3?: string | null
+          std?: string | null
+          turn_over_inr_cr?: number | null
+          website?: string | null
         }
         Update: {
+          address_type?: string | null
           annual_revenue?: number | null
+          common_email_id?: string | null
           company_id?: never
+          company_mobile_number?: string | null
           company_name?: string | null
           employees?: number | null
+          fax?: string | null
           headquarters?: string | null
           industry?: string | null
+          no_of_branch_offices?: number | null
+          no_of_employees_total?: number | null
+          no_of_offices_total?: number | null
+          phone_1?: string | null
+          phone_2?: string | null
+          postal_address_1?: string | null
+          postal_address_2?: string | null
+          postal_address_3?: string | null
+          std?: string | null
+          turn_over_inr_cr?: number | null
+          website?: string | null
         }
         Relationships: []
       }
