@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 import {
@@ -13,7 +13,15 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Plus } from "lucide-react"
+import { AddIndustryDialog } from "./AddIndustryDialog"
 
 interface AddCompanyDialogProps {
   onCompanyAdded: () => void
@@ -22,6 +30,7 @@ interface AddCompanyDialogProps {
 export function AddCompanyDialog({ onCompanyAdded }: AddCompanyDialogProps) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [industries, setIndustries] = useState<Array<{ industry_id: number; industry_vertical: string | null; sub_vertical: string | null }>>([])
   const { toast } = useToast()
 
   const [formData, setFormData] = useState({
@@ -46,6 +55,24 @@ export function AddCompanyDialog({ onCompanyAdded }: AddCompanyDialogProps) {
     no_of_offices_total: "",
     no_of_branch_offices: "",
   })
+
+  useEffect(() => {
+    fetchIndustries()
+  }, [])
+
+  const fetchIndustries = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('industry_master')
+        .select('industry_id, industry_vertical, sub_vertical')
+        .order('industry_vertical')
+
+      if (error) throw error
+      setIndustries(data || [])
+    } catch (error) {
+      console.error('Error fetching industries:', error)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -153,13 +180,22 @@ export function AddCompanyDialog({ onCompanyAdded }: AddCompanyDialogProps) {
               </div>
 
               <div>
-                <Label htmlFor="industry">Industry</Label>
-                <Input
-                  id="industry"
-                  value={formData.industry}
-                  onChange={(e) => setFormData(prev => ({ ...prev, industry: e.target.value }))}
-                  placeholder="Enter industry"
-                />
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="industry">Industry</Label>
+                  <AddIndustryDialog onIndustryAdded={fetchIndustries} />
+                </div>
+                <Select value={formData.industry} onValueChange={(value) => setFormData(prev => ({ ...prev, industry: value }))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select industry..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {industries.map((industry) => (
+                      <SelectItem key={industry.industry_id} value={industry.industry_vertical || ""}>
+                        {industry.industry_vertical} {industry.sub_vertical ? `- ${industry.sub_vertical}` : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>
