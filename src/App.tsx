@@ -7,6 +7,8 @@ import { AppLayout } from "./components/layout/AppLayout";
 import Dashboard from "./pages/Dashboard";
 import Contacts from "./pages/Contacts";
 import Companies from "./pages/Companies";
+import Industries from "./pages/Industries";
+import Cities from "./pages/Cities";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -25,6 +27,8 @@ const App = () => (
             <Route path="/campaigns" element={<div className="p-6"><h1 className="text-2xl font-bold">Campaigns - Coming Soon</h1></div>} />
             <Route path="/audiences" element={<div className="p-6"><h1 className="text-2xl font-bold">Audiences - Coming Soon</h1></div>} />
             <Route path="/analytics" element={<div className="p-6"><h1 className="text-2xl font-bold">Analytics - Coming Soon</h1></div>} />
+            <Route path="/industries" element={<Industries />} />
+            <Route path="/cities" element={<Cities />} />
             <Route path="/settings" element={<div className="p-6"><h1 className="text-2xl font-bold">Settings - Coming Soon</h1></div>} />
             <Route path="*" element={<NotFound />} />
           </Routes>

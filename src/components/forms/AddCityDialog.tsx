@@ -16,11 +16,15 @@ import { Label } from "@/components/ui/label"
 import { Plus } from "lucide-react"
 
 interface AddCityDialogProps {
-  onCityAdded: () => void
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  onCityAdded: () => void;
 }
 
-export function AddCityDialog({ onCityAdded }: AddCityDialogProps) {
-  const [open, setOpen] = useState(false)
+export function AddCityDialog({ open: externalOpen, onOpenChange: externalOnOpenChange, onCityAdded }: AddCityDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false)
+  const open = externalOpen !== undefined ? externalOpen : internalOpen
+  const setOpen = externalOnOpenChange !== undefined ? externalOnOpenChange : setInternalOpen
   const [loading, setLoading] = useState(false)
   const { toast } = useToast()
 

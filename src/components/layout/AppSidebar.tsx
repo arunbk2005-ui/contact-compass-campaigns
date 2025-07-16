@@ -6,7 +6,9 @@ import {
   Megaphone, 
   Target,
   BarChart3,
-  Settings
+  Settings,
+  MapPin,
+  Factory
 } from "lucide-react"
 
 import {
@@ -31,6 +33,8 @@ const navigationItems = [
 ]
 
 const managementItems = [
+  { title: "Industries", url: "/industries", icon: Factory },
+  { title: "Cities", url: "/cities", icon: MapPin },
   { title: "Settings", url: "/settings", icon: Settings },
 ]
 

@@ -21,7 +21,6 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Plus } from "lucide-react"
-import { AddIndustryDialog } from "./AddIndustryDialog"
 
 interface AddCompanyDialogProps {
   onCompanyAdded: () => void
@@ -180,10 +179,7 @@ export function AddCompanyDialog({ onCompanyAdded }: AddCompanyDialogProps) {
               </div>
 
               <div>
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="industry">Industry</Label>
-                  <AddIndustryDialog onIndustryAdded={fetchIndustries} />
-                </div>
+                <Label htmlFor="industry">Industry</Label>
                 <Select value={formData.industry} onValueChange={(value) => setFormData(prev => ({ ...prev, industry: value }))}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select industry..." />

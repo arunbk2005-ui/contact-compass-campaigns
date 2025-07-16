@@ -16,11 +16,15 @@ import { Label } from "@/components/ui/label"
 import { Plus } from "lucide-react"
 
 interface AddIndustryDialogProps {
-  onIndustryAdded: () => void
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  onIndustryAdded: () => void;
 }
 
-export function AddIndustryDialog({ onIndustryAdded }: AddIndustryDialogProps) {
-  const [open, setOpen] = useState(false)
+export function AddIndustryDialog({ open: externalOpen, onOpenChange: externalOnOpenChange, onIndustryAdded }: AddIndustryDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false)
+  const open = externalOpen !== undefined ? externalOpen : internalOpen
+  const setOpen = externalOnOpenChange !== undefined ? externalOnOpenChange : setInternalOpen
   const [loading, setLoading] = useState(false)
   const { toast } = useToast()
 
