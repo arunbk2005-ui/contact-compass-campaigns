@@ -31,6 +31,8 @@ export function AddCompanyDialog({ onCompanyAdded }: AddCompanyDialogProps) {
   const [loading, setLoading] = useState(false)
   const [industries, setIndustries] = useState<Array<{ industry_id: number; industry_vertical: string | null; sub_vertical: string | null }>>([])
   const [cities, setCities] = useState<Array<{ city_id: number; city: string | null }>>([])
+  const [turnovers, setTurnovers] = useState<Array<{ id: number; turnover_range: string }>>([])
+  const [empRanges, setEmpRanges] = useState<Array<{ id: number; employee_range: string }>>([])
   const { toast } = useToast()
 
   const [formData, setFormData] = useState({
@@ -55,11 +57,15 @@ export function AddCompanyDialog({ onCompanyAdded }: AddCompanyDialogProps) {
     turn_over_inr_cr: "",
     no_of_offices_total: "",
     no_of_branch_offices: "",
+    turnover_range: "",
+    employee_range: "",
   })
 
   useEffect(() => {
     fetchIndustries()
     fetchCities()
+    fetchTurnovers()
+    fetchEmpRanges()
   }, [])
 
   const fetchIndustries = async () => {
@@ -87,6 +93,34 @@ export function AddCompanyDialog({ onCompanyAdded }: AddCompanyDialogProps) {
       setCities(data || [])
     } catch (error) {
       console.error('Error fetching cities:', error)
+    }
+  }
+
+  const fetchTurnovers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('comp_turnover_master')
+        .select('id, turnover_range')
+        .order('turnover_range')
+
+      if (error) throw error
+      setTurnovers(data || [])
+    } catch (error) {
+      console.error('Error fetching turnovers:', error)
+    }
+  }
+
+  const fetchEmpRanges = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('emp_range_master')
+        .select('id, employee_range')
+        .order('employee_range')
+
+      if (error) throw error
+      setEmpRanges(data || [])
+    } catch (error) {
+      console.error('Error fetching employee ranges:', error)
     }
   }
 
@@ -153,6 +187,8 @@ export function AddCompanyDialog({ onCompanyAdded }: AddCompanyDialogProps) {
         turn_over_inr_cr: "",
         no_of_offices_total: "",
         no_of_branch_offices: "",
+        turnover_range: "",
+        employee_range: "",
       })
       onCompanyAdded()
     } catch (error) {
@@ -240,26 +276,35 @@ export function AddCompanyDialog({ onCompanyAdded }: AddCompanyDialogProps) {
               </div>
 
               <div>
-                <Label htmlFor="employees">Employees</Label>
-                <Input
-                  id="employees"
-                  type="number"
-                  value={formData.employees}
-                  onChange={(e) => setFormData(prev => ({ ...prev, employees: e.target.value }))}
-                  placeholder="Number of employees"
-                />
+                <Label htmlFor="employee_range">Employee Range</Label>
+                <Select value={formData.employee_range} onValueChange={(value) => setFormData(prev => ({ ...prev, employee_range: value }))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select employee range..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {empRanges.map((range) => (
+                      <SelectItem key={range.id} value={range.employee_range}>
+                        {range.employee_range}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>
-                <Label htmlFor="annual_revenue">Annual Revenue</Label>
-                <Input
-                  id="annual_revenue"
-                  type="number"
-                  step="0.01"
-                  value={formData.annual_revenue}
-                  onChange={(e) => setFormData(prev => ({ ...prev, annual_revenue: e.target.value }))}
-                  placeholder="Annual revenue"
-                />
+                <Label htmlFor="turnover_range">Turnover Range</Label>
+                <Select value={formData.turnover_range} onValueChange={(value) => setFormData(prev => ({ ...prev, turnover_range: value }))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select turnover range..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {turnovers.map((turnover) => (
+                      <SelectItem key={turnover.id} value={turnover.turnover_range}>
+                        {turnover.turnover_range}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>

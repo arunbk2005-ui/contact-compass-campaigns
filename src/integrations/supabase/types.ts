@@ -41,6 +41,27 @@ export type Database = {
         }
         Relationships: []
       }
+      comp_turnover_master: {
+        Row: {
+          created_at: string
+          id: number
+          turnover_range: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          turnover_range: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          turnover_range?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       contact_master: {
         Row: {
           City_ID: number | null
@@ -113,6 +134,48 @@ export type Database = {
           },
         ]
       }
+      department_master: {
+        Row: {
+          created_at: string
+          department_name: string
+          id: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          department_name: string
+          id?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          department_name?: string
+          id?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      emp_range_master: {
+        Row: {
+          created_at: string
+          employee_range: string
+          id: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          employee_range: string
+          id?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          employee_range?: string
+          id?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       industry_master: {
         Row: {
           industry_id: number
@@ -128,6 +191,27 @@ export type Database = {
           industry_id?: number
           industry_vertical?: string | null
           sub_vertical?: string | null
+        }
+        Relationships: []
+      }
+      job_level_master: {
+        Row: {
+          created_at: string
+          id: number
+          job_level_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          job_level_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          job_level_name?: string
+          updated_at?: string
         }
         Relationships: []
       }

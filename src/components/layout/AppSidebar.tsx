@@ -8,7 +8,10 @@ import {
   BarChart3,
   Settings,
   MapPin,
-  Factory
+  Factory,
+  UserCheck,
+  TrendingUp,
+  Briefcase
 } from "lucide-react"
 
 import {
@@ -35,6 +38,10 @@ const navigationItems = [
 const managementItems = [
   { title: "Industries", url: "/industries", icon: Factory },
   { title: "Cities", url: "/cities", icon: MapPin },
+  { title: "Departments", url: "/departments", icon: Briefcase },
+  { title: "Job Levels", url: "/job-levels", icon: UserCheck },
+  { title: "Company Turnovers", url: "/comp-turnovers", icon: TrendingUp },
+  { title: "Employee Ranges", url: "/emp-ranges", icon: Users },
   { title: "Settings", url: "/settings", icon: Settings },
 ]
 

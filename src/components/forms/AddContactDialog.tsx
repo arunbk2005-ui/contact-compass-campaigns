@@ -31,10 +31,14 @@ export function AddContactDialog({ onContactAdded, companies }: AddContactDialog
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [cities, setCities] = useState<Array<{ city_id: number; city: string | null }>>([])
+  const [departments, setDepartments] = useState<Array<{ id: number; department_name: string }>>([])
+  const [jobLevels, setJobLevels] = useState<Array<{ id: number; job_level_name: string }>>([])
   const { toast } = useToast()
 
   useEffect(() => {
     fetchCities()
+    fetchDepartments()
+    fetchJobLevels()
   }, [])
 
   const fetchCities = async () => {
@@ -48,6 +52,34 @@ export function AddContactDialog({ onContactAdded, companies }: AddContactDialog
       setCities(data || [])
     } catch (error) {
       console.error('Error fetching cities:', error)
+    }
+  }
+
+  const fetchDepartments = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('department_master')
+        .select('id, department_name')
+        .order('department_name')
+
+      if (error) throw error
+      setDepartments(data || [])
+    } catch (error) {
+      console.error('Error fetching departments:', error)
+    }
+  }
+
+  const fetchJobLevels = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('job_level_master')
+        .select('id, job_level_name')
+        .order('job_level_name')
+
+      if (error) throw error
+      setJobLevels(data || [])
+    } catch (error) {
+      console.error('Error fetching job levels:', error)
     }
   }
 
@@ -257,24 +289,36 @@ export function AddContactDialog({ onContactAdded, companies }: AddContactDialog
 
             <div>
               <Label htmlFor="department">Department</Label>
-              <Input
-                id="department"
-                value={formData.department}
-                onChange={(e) => setFormData(prev => ({ ...prev, department: e.target.value }))}
-                placeholder="Enter department"
-              />
+              <Select value={formData.department} onValueChange={(value) => setFormData(prev => ({ ...prev, department: value }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select department..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {departments.map((dept) => (
+                    <SelectItem key={dept.id} value={dept.department_name}>
+                      {dept.department_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="job_level">Job Level</Label>
-              <Input
-                id="job_level"
-                value={formData.job_level}
-                onChange={(e) => setFormData(prev => ({ ...prev, job_level: e.target.value }))}
-                placeholder="Enter job level"
-              />
+              <Select value={formData.job_level} onValueChange={(value) => setFormData(prev => ({ ...prev, job_level: value }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select job level..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {jobLevels.map((level) => (
+                    <SelectItem key={level.id} value={level.job_level_name}>
+                      {level.job_level_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div>
