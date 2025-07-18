@@ -30,7 +30,26 @@ interface AddContactDialogProps {
 export function AddContactDialog({ onContactAdded, companies }: AddContactDialogProps) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [cities, setCities] = useState<Array<{ city_id: number; city: string | null }>>([])
   const { toast } = useToast()
+
+  useEffect(() => {
+    fetchCities()
+  }, [])
+
+  const fetchCities = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('city_master')
+        .select('city_id, city')
+        .order('city')
+
+      if (error) throw error
+      setCities(data || [])
+    } catch (error) {
+      console.error('Error fetching cities:', error)
+    }
+  }
 
   const [formData, setFormData] = useState({
     salute: "",
@@ -41,6 +60,7 @@ export function AddContactDialog({ onContactAdded, companies }: AddContactDialog
     job_level: "",
     specialization: "",
     company_id: "",
+    city_id: "",
     official_email_id: "",
     personal_email_id: "",
     mobile_number: "",
@@ -69,6 +89,7 @@ export function AddContactDialog({ onContactAdded, companies }: AddContactDialog
         ...formData,
         contact_id: nextId,
         company_id: formData.company_id ? parseInt(formData.company_id) : null,
+        city_id: formData.city_id ? parseInt(formData.city_id) : null,
       }
 
       // Remove empty strings to avoid constraint issues
@@ -99,6 +120,7 @@ export function AddContactDialog({ onContactAdded, companies }: AddContactDialog
         job_level: "",
         specialization: "",
         company_id: "",
+        city_id: "",
         official_email_id: "",
         personal_email_id: "",
         mobile_number: "",
@@ -188,20 +210,38 @@ export function AddContactDialog({ onContactAdded, companies }: AddContactDialog
             </div>
           </div>
 
-          <div>
-            <Label htmlFor="company_id">Company</Label>
-            <Select value={formData.company_id} onValueChange={(value) => setFormData(prev => ({ ...prev, company_id: value }))}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select company..." />
-              </SelectTrigger>
-              <SelectContent>
-                {companies.map((company) => (
-                  <SelectItem key={company.company_id} value={company.company_id.toString()}>
-                    {company.company_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="company_id">Company</Label>
+              <Select value={formData.company_id} onValueChange={(value) => setFormData(prev => ({ ...prev, company_id: value }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select company..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {companies.map((company) => (
+                    <SelectItem key={company.company_id} value={company.company_id.toString()}>
+                      {company.company_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="city_id">City</Label>
+              <Select value={formData.city_id} onValueChange={(value) => setFormData(prev => ({ ...prev, city_id: value }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select city..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {cities.map((city) => (
+                    <SelectItem key={city.city_id} value={city.city_id.toString()}>
+                      {city.city}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

@@ -25,7 +25,7 @@ export type Database = {
         }
         Insert: {
           city?: string | null
-          city_id: number
+          city_id?: number
           country?: string | null
           pincode?: string | null
           region?: string | null
@@ -43,11 +43,13 @@ export type Database = {
       }
       contact_master: {
         Row: {
+          City_ID: number | null
           company_id: number | null
           contact_id: number
           department: string | null
           designation: string | null
           direct_phone_number: string | null
+          Email_Optin: string | null
           first_name: string | null
           gender: string | null
           job_level: string | null
@@ -59,11 +61,13 @@ export type Database = {
           specialization: string | null
         }
         Insert: {
+          City_ID?: number | null
           company_id?: number | null
           contact_id: number
           department?: string | null
           designation?: string | null
           direct_phone_number?: string | null
+          Email_Optin?: string | null
           first_name?: string | null
           gender?: string | null
           job_level?: string | null
@@ -75,11 +79,13 @@ export type Database = {
           specialization?: string | null
         }
         Update: {
+          City_ID?: number | null
           company_id?: number | null
           contact_id?: number
           department?: string | null
           designation?: string | null
           direct_phone_number?: string | null
+          Email_Optin?: string | null
           first_name?: string | null
           gender?: string | null
           job_level?: string | null
@@ -91,6 +97,13 @@ export type Database = {
           specialization?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "contact_master_City_ID_fkey"
+            columns: ["City_ID"]
+            isOneToOne: true
+            referencedRelation: "city_master"
+            referencedColumns: ["city_id"]
+          },
           {
             foreignKeyName: "contact_master_company_id_fkey"
             columns: ["company_id"]
@@ -122,6 +135,7 @@ export type Database = {
         Row: {
           address_type: string | null
           annual_revenue: number | null
+          city_id: number | null
           common_email_id: string | null
           company_id: number
           company_mobile_number: string | null
@@ -145,6 +159,7 @@ export type Database = {
         Insert: {
           address_type?: string | null
           annual_revenue?: number | null
+          city_id?: number | null
           common_email_id?: string | null
           company_id?: never
           company_mobile_number?: string | null
@@ -168,6 +183,7 @@ export type Database = {
         Update: {
           address_type?: string | null
           annual_revenue?: number | null
+          city_id?: number | null
           common_email_id?: string | null
           company_id?: never
           company_mobile_number?: string | null

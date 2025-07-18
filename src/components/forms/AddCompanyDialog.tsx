@@ -30,6 +30,7 @@ export function AddCompanyDialog({ onCompanyAdded }: AddCompanyDialogProps) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [industries, setIndustries] = useState<Array<{ industry_id: number; industry_vertical: string | null; sub_vertical: string | null }>>([])
+  const [cities, setCities] = useState<Array<{ city_id: number; city: string | null }>>([])
   const { toast } = useToast()
 
   const [formData, setFormData] = useState({
@@ -38,6 +39,7 @@ export function AddCompanyDialog({ onCompanyAdded }: AddCompanyDialogProps) {
     headquarters: "",
     employees: "",
     annual_revenue: "",
+    city_id: "",
     address_type: "",
     postal_address_1: "",
     postal_address_2: "",
@@ -57,6 +59,7 @@ export function AddCompanyDialog({ onCompanyAdded }: AddCompanyDialogProps) {
 
   useEffect(() => {
     fetchIndustries()
+    fetchCities()
   }, [])
 
   const fetchIndustries = async () => {
@@ -73,6 +76,20 @@ export function AddCompanyDialog({ onCompanyAdded }: AddCompanyDialogProps) {
     }
   }
 
+  const fetchCities = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('city_master')
+        .select('city_id, city')
+        .order('city')
+
+      if (error) throw error
+      setCities(data || [])
+    } catch (error) {
+      console.error('Error fetching cities:', error)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -84,6 +101,7 @@ export function AddCompanyDialog({ onCompanyAdded }: AddCompanyDialogProps) {
         headquarters: formData.headquarters || null,
         employees: formData.employees ? parseInt(formData.employees) : null,
         annual_revenue: formData.annual_revenue ? parseFloat(formData.annual_revenue) : null,
+        city_id: formData.city_id ? parseInt(formData.city_id) : null,
         address_type: formData.address_type || null,
         postal_address_1: formData.postal_address_1 || null,
         postal_address_2: formData.postal_address_2 || null,
@@ -119,6 +137,7 @@ export function AddCompanyDialog({ onCompanyAdded }: AddCompanyDialogProps) {
         headquarters: "",
         employees: "",
         annual_revenue: "",
+        city_id: "",
         address_type: "",
         postal_address_1: "",
         postal_address_2: "",
@@ -188,6 +207,22 @@ export function AddCompanyDialog({ onCompanyAdded }: AddCompanyDialogProps) {
                     {industries.map((industry) => (
                       <SelectItem key={industry.industry_id} value={industry.industry_vertical || ""}>
                         {industry.industry_vertical} {industry.sub_vertical ? `- ${industry.sub_vertical}` : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="city_id">City</Label>
+                <Select value={formData.city_id} onValueChange={(value) => setFormData(prev => ({ ...prev, city_id: value }))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select city..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {cities.map((city) => (
+                      <SelectItem key={city.city_id} value={city.city_id.toString()}>
+                        {city.city}
                       </SelectItem>
                     ))}
                   </SelectContent>
