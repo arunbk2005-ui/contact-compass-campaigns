@@ -56,7 +56,7 @@ export function AppSidebar() {
     `flex items-center transition-all duration-200 ${
       isActive 
         ? "bg-primary text-primary-foreground font-medium shadow-sm" 
-        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+        : "text-foreground/80 hover:bg-muted hover:text-foreground"
     }`
 
   return (
