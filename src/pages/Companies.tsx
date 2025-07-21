@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"
 import { supabase } from "@/integrations/supabase/client"
 import { AddCompanyDialog } from "@/components/forms/AddCompanyDialog"
+import { EditCompanyDialog } from "@/components/forms/EditCompanyDialog"
 import { BulkUploadDialog } from "@/components/forms/BulkUploadDialog"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -38,6 +39,7 @@ const Companies = () => {
   const [searchTerm, setSearchTerm] = useState("")
   const [companies, setCompanies] = useState<Company[]>([])
   const [loading, setLoading] = useState(true)
+  const [editCompany, setEditCompany] = useState<Company | null>(null)
 
   useEffect(() => {
     fetchCompanies()
@@ -171,7 +173,7 @@ const Companies = () => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent>
-                    <DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setEditCompany(company)}>
                       <Edit className="w-4 h-4 mr-2" />
                       Edit Company
                     </DropdownMenuItem>
@@ -249,6 +251,16 @@ const Companies = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Edit Company Dialog */}
+      {editCompany && (
+        <EditCompanyDialog
+          company={editCompany}
+          open={!!editCompany}
+          onOpenChange={(open) => !open && setEditCompany(null)}
+          onCompanyUpdated={fetchCompanies}
+        />
+      )}
     </div>
   )
 }

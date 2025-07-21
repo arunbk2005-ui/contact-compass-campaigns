@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"
 import { supabase } from "@/integrations/supabase/client"
 import { AddContactDialog } from "@/components/forms/AddContactDialog"
+import { EditContactDialog } from "@/components/forms/EditContactDialog"
 import { BulkUploadDialog } from "@/components/forms/BulkUploadDialog"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -47,6 +48,7 @@ const Contacts = () => {
   const [contacts, setContacts] = useState<Contact[]>([])
   const [companies, setCompanies] = useState<Array<{ company_id: number; company_name: string | null }>>([])
   const [loading, setLoading] = useState(true)
+  const [editContact, setEditContact] = useState<Contact | null>(null)
 
   useEffect(() => {
     fetchContacts()
@@ -190,7 +192,7 @@ const Contacts = () => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent>
-                    <DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setEditContact(contact)}>
                       <Edit className="w-4 h-4 mr-2" />
                       Edit Contact
                     </DropdownMenuItem>
@@ -270,6 +272,17 @@ const Contacts = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Edit Contact Dialog */}
+      {editContact && (
+        <EditContactDialog
+          contact={editContact}
+          companies={companies}
+          open={!!editContact}
+          onOpenChange={(open) => !open && setEditContact(null)}
+          onContactUpdated={fetchContacts}
+        />
+      )}
     </div>
   )
 }
