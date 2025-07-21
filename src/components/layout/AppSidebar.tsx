@@ -53,10 +53,10 @@ export function AppSidebar() {
 
   const isActive = (path: string) => currentPath === path
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
-    `flex items-center transition-all duration-200 ${
+    `flex items-center transition-all duration-200 p-2 rounded-md ${
       isActive 
         ? "bg-primary text-primary-foreground font-medium shadow-sm" 
-        : "text-foreground/80 hover:bg-muted hover:text-foreground"
+        : "text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100"
     }`
 
   return (
@@ -88,7 +88,7 @@ export function AppSidebar() {
             <SidebarMenu>
               {navigationItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild className="mx-2">
+                  <SidebarMenuButton asChild className="mx-2 h-auto p-0">
                     <NavLink 
                       to={item.url} 
                       end 
@@ -113,7 +113,7 @@ export function AppSidebar() {
             <SidebarMenu>
               {managementItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild className="mx-2">
+                  <SidebarMenuButton asChild className="mx-2 h-auto p-0">
                     <NavLink 
                       to={item.url} 
                       className={getNavCls}
