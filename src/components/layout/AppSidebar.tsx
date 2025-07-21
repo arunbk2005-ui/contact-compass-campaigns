@@ -92,7 +92,7 @@ export function AppSidebar() {
                     <NavLink 
                       to={item.url} 
                       end 
-                      className={getNavCls}
+                      className={() => getNavCls({ isActive: isActive(item.url) })}
                     >
                       <item.icon className="w-4 h-4 mr-3" />
                       {!isCollapsed && <span>{item.title}</span>}
@@ -116,7 +116,7 @@ export function AppSidebar() {
                   <SidebarMenuButton asChild className="mx-2 h-auto p-0">
                     <NavLink 
                       to={item.url} 
-                      className={getNavCls}
+                      className={() => getNavCls({ isActive: isActive(item.url) })}
                     >
                       <item.icon className="w-4 h-4 mr-3" />
                       {!isCollapsed && <span>{item.title}</span>}
