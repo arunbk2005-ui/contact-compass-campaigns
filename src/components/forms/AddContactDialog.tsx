@@ -92,12 +92,13 @@ export function AddContactDialog({ onContactAdded, companies }: AddContactDialog
     job_level: "",
     specialization: "",
     company_id: "",
-    city_id: "",
+    City_ID: "",
     official_email_id: "",
     personal_email_id: "",
     mobile_number: "",
     direct_phone_number: "",
     gender: "",
+    Email_Optin: "",
   })
 
 
@@ -121,7 +122,7 @@ export function AddContactDialog({ onContactAdded, companies }: AddContactDialog
         ...formData,
         contact_id: nextId,
         company_id: formData.company_id ? parseInt(formData.company_id) : null,
-        city_id: formData.city_id ? parseInt(formData.city_id) : null,
+        City_ID: formData.City_ID ? parseInt(formData.City_ID) : null,
       }
 
       // Remove empty strings to avoid constraint issues
@@ -152,12 +153,13 @@ export function AddContactDialog({ onContactAdded, companies }: AddContactDialog
         job_level: "",
         specialization: "",
         company_id: "",
-        city_id: "",
+        City_ID: "",
         official_email_id: "",
         personal_email_id: "",
         mobile_number: "",
         direct_phone_number: "",
         gender: "",
+        Email_Optin: "",
       })
       onContactAdded()
     } catch (error) {
@@ -260,8 +262,8 @@ export function AddContactDialog({ onContactAdded, companies }: AddContactDialog
             </div>
 
             <div>
-              <Label htmlFor="city_id">City</Label>
-              <Select value={formData.city_id} onValueChange={(value) => setFormData(prev => ({ ...prev, city_id: value }))}>
+              <Label htmlFor="City_ID">City</Label>
+              <Select value={formData.City_ID} onValueChange={(value) => setFormData(prev => ({ ...prev, City_ID: value }))}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select city..." />
                 </SelectTrigger>
@@ -376,6 +378,19 @@ export function AddContactDialog({ onContactAdded, companies }: AddContactDialog
                 placeholder="Enter direct phone"
               />
             </div>
+          </div>
+
+          <div>
+            <Label htmlFor="Email_Optin">Email Opt-in</Label>
+            <Select value={formData.Email_Optin} onValueChange={(value) => setFormData(prev => ({ ...prev, Email_Optin: value }))}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select email preference..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Yes">Yes</SelectItem>
+                <SelectItem value="No">No</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <DialogFooter>

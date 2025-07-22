@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -32,58 +32,108 @@ import { toast } from "sonner"
 
 const formSchema = z.object({
   salute: z.string().optional(),
-  first_name: z.string().min(1, "First name is required"),
+  first_name: z.string().optional(),
   last_name: z.string().optional(),
   designation: z.string().optional(),
   department: z.string().optional(),
   job_level: z.string().optional(),
   specialization: z.string().optional(),
+  company_id: z.coerce.number().positive().optional(),
+  City_ID: z.coerce.number().positive().optional(),
   official_email_id: z.string().email().optional().or(z.literal("")),
   personal_email_id: z.string().email().optional().or(z.literal("")),
-  direct_phone_number: z.string().optional(),
   mobile_number: z.string().optional(),
+  direct_phone_number: z.string().optional(),
   gender: z.string().optional(),
-  company_id: z.coerce.number().optional(),
+  Email_Optin: z.string().optional(),
 })
 
 interface Contact {
   contact_id: number
-  company_id: number | null
+  salute: string | null
   first_name: string | null
   last_name: string | null
   designation: string | null
   department: string | null
   job_level: string | null
   specialization: string | null
+  company_id: number | null
+  City_ID: number | null
   official_email_id: string | null
   personal_email_id: string | null
-  direct_phone_number: string | null
   mobile_number: string | null
+  direct_phone_number: string | null
   gender: string | null
-  salute: string | null
-}
-
-interface Company {
-  company_id: number
-  company_name: string | null
+  Email_Optin: string | null
 }
 
 interface EditContactDialogProps {
   contact: Contact
-  companies: Company[]
   open: boolean
   onOpenChange: (open: boolean) => void
   onContactUpdated: () => void
+  companies: Array<{ company_id: number; company_name: string | null }>
 }
 
 export function EditContactDialog({ 
   contact, 
-  companies, 
   open, 
   onOpenChange, 
-  onContactUpdated 
+  onContactUpdated,
+  companies 
 }: EditContactDialogProps) {
   const [loading, setLoading] = useState(false)
+  const [cities, setCities] = useState<Array<{ city_id: number; city: string | null }>>([])
+  const [departments, setDepartments] = useState<Array<{ id: number; department_name: string }>>([])
+  const [jobLevels, setJobLevels] = useState<Array<{ id: number; job_level_name: string }>>([])
+
+  useEffect(() => {
+    fetchCities()
+    fetchDepartments()
+    fetchJobLevels()
+  }, [])
+
+  const fetchCities = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('city_master')
+        .select('city_id, city')
+        .order('city')
+
+      if (error) throw error
+      setCities(data || [])
+    } catch (error) {
+      console.error('Error fetching cities:', error)
+    }
+  }
+
+  const fetchDepartments = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('department_master')
+        .select('id, department_name')
+        .order('department_name')
+
+      if (error) throw error
+      setDepartments(data || [])
+    } catch (error) {
+      console.error('Error fetching departments:', error)
+    }
+  }
+
+  const fetchJobLevels = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('job_level_master')
+        .select('id, job_level_name')
+        .order('job_level_name')
+
+      if (error) throw error
+      setJobLevels(data || [])
+    } catch (error) {
+      console.error('Error fetching job levels:', error)
+    }
+  }
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -95,12 +145,14 @@ export function EditContactDialog({
       department: contact.department || "",
       job_level: contact.job_level || "",
       specialization: contact.specialization || "",
+      company_id: contact.company_id || undefined,
+      City_ID: contact.City_ID || undefined,
       official_email_id: contact.official_email_id || "",
       personal_email_id: contact.personal_email_id || "",
-      direct_phone_number: contact.direct_phone_number || "",
       mobile_number: contact.mobile_number || "",
+      direct_phone_number: contact.direct_phone_number || "",
       gender: contact.gender || "",
-      company_id: contact.company_id || undefined,
+      Email_Optin: contact.Email_Optin || "",
     },
   })
 
@@ -127,7 +179,7 @@ export function EditContactDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit Contact</DialogTitle>
           <DialogDescription>
@@ -137,26 +189,26 @@ export function EditContactDialog({
         
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="salute"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Salute</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
+                    <FormLabel>Salutation</FormLabel>
+                    <FormControl>
+                      <Select value={field.value || ""} onValueChange={field.onChange}>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select" />
+                          <SelectValue placeholder="Select..." />
                         </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="Mr.">Mr.</SelectItem>
-                        <SelectItem value="Ms.">Ms.</SelectItem>
-                        <SelectItem value="Mrs.">Mrs.</SelectItem>
-                        <SelectItem value="Dr.">Dr.</SelectItem>
-                      </SelectContent>
-                    </Select>
+                        <SelectContent>
+                          <SelectItem value="Mr.">Mr.</SelectItem>
+                          <SelectItem value="Ms.">Ms.</SelectItem>
+                          <SelectItem value="Mrs.">Mrs.</SelectItem>
+                          <SelectItem value="Dr.">Dr.</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -164,12 +216,37 @@ export function EditContactDialog({
 
               <FormField
                 control={form.control}
+                name="gender"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Gender</FormLabel>
+                    <FormControl>
+                      <Select value={field.value || ""} onValueChange={field.onChange}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Male">Male</SelectItem>
+                          <SelectItem value="Female">Female</SelectItem>
+                          <SelectItem value="Other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
                 name="first_name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>First Name *</FormLabel>
+                    <FormLabel>First Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="First name" {...field} />
+                      <Input placeholder="Enter first name" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -183,7 +260,7 @@ export function EditContactDialog({
                   <FormItem>
                     <FormLabel>Last Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="Last name" {...field} />
+                      <Input placeholder="Enter last name" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -191,30 +268,57 @@ export function EditContactDialog({
               />
             </div>
 
-            <FormField
-              control={form.control}
-              name="company_id"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Company</FormLabel>
-                  <Select onValueChange={(value) => field.onChange(parseInt(value))} defaultValue={field.value?.toString()}>
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="company_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Company</FormLabel>
                     <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select company" />
-                      </SelectTrigger>
+                      <Select value={field.value?.toString() || ""} onValueChange={(value) => field.onChange(value ? parseInt(value) : undefined)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select company..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {companies.map((company) => (
+                            <SelectItem key={company.company_id} value={company.company_id.toString()}>
+                              {company.company_name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </FormControl>
-                    <SelectContent>
-                      {companies.map((company) => (
-                        <SelectItem key={company.company_id} value={company.company_id.toString()}>
-                          {company.company_name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="City_ID"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>City</FormLabel>
+                    <FormControl>
+                      <Select value={field.value?.toString() || ""} onValueChange={(value) => field.onChange(value ? parseInt(value) : undefined)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select city..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {cities.map((city) => (
+                            <SelectItem key={city.city_id} value={city.city_id.toString()}>
+                              {city.city}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <div className="grid grid-cols-2 gap-4">
               <FormField
@@ -224,7 +328,7 @@ export function EditContactDialog({
                   <FormItem>
                     <FormLabel>Designation</FormLabel>
                     <FormControl>
-                      <Input placeholder="Job title" {...field} />
+                      <Input placeholder="Enter designation" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -238,7 +342,18 @@ export function EditContactDialog({
                   <FormItem>
                     <FormLabel>Department</FormLabel>
                     <FormControl>
-                      <Input placeholder="Department" {...field} />
+                      <Select value={field.value || ""} onValueChange={field.onChange}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select department..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {departments.map((dept) => (
+                            <SelectItem key={dept.id} value={dept.department_name}>
+                              {dept.department_name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -254,7 +369,18 @@ export function EditContactDialog({
                   <FormItem>
                     <FormLabel>Job Level</FormLabel>
                     <FormControl>
-                      <Input placeholder="Job level" {...field} />
+                      <Select value={field.value || ""} onValueChange={field.onChange}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select job level..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {jobLevels.map((level) => (
+                            <SelectItem key={level.id} value={level.job_level_name}>
+                              {level.job_level_name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -263,41 +389,18 @@ export function EditContactDialog({
 
               <FormField
                 control={form.control}
-                name="gender"
+                name="specialization"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Gender</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select gender" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="Male">Male</SelectItem>
-                        <SelectItem value="Female">Female</SelectItem>
-                        <SelectItem value="Other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <FormLabel>Specialization</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter specialization" {...field} />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
             </div>
-
-            <FormField
-              control={form.control}
-              name="specialization"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Specialization</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Area of specialization" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
 
             <div className="grid grid-cols-2 gap-4">
               <FormField
@@ -307,7 +410,7 @@ export function EditContactDialog({
                   <FormItem>
                     <FormLabel>Official Email</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="official@company.com" {...field} />
+                      <Input type="email" placeholder="Enter official email" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -321,7 +424,7 @@ export function EditContactDialog({
                   <FormItem>
                     <FormLabel>Personal Email</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="personal@email.com" {...field} />
+                      <Input type="email" placeholder="Enter personal email" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -337,7 +440,7 @@ export function EditContactDialog({
                   <FormItem>
                     <FormLabel>Mobile Number</FormLabel>
                     <FormControl>
-                      <Input placeholder="+1234567890" {...field} />
+                      <Input placeholder="Enter mobile number" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -351,13 +454,35 @@ export function EditContactDialog({
                   <FormItem>
                     <FormLabel>Direct Phone</FormLabel>
                     <FormControl>
-                      <Input placeholder="+1234567890" {...field} />
+                      <Input placeholder="Enter direct phone" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
             </div>
+
+            <FormField
+              control={form.control}
+              name="Email_Optin"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email Opt-in</FormLabel>
+                  <FormControl>
+                    <Select value={field.value || ""} onValueChange={field.onChange}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select email preference..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Yes">Yes</SelectItem>
+                        <SelectItem value="No">No</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

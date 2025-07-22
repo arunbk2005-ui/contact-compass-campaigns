@@ -57,8 +57,6 @@ export function AddCompanyDialog({ onCompanyAdded }: AddCompanyDialogProps) {
     turn_over_inr_cr: "",
     no_of_offices_total: "",
     no_of_branch_offices: "",
-    turnover_range: "",
-    employee_range: "",
   })
 
   useEffect(() => {
@@ -129,6 +127,7 @@ export function AddCompanyDialog({ onCompanyAdded }: AddCompanyDialogProps) {
     setLoading(true)
 
     try {
+
       const dataToInsert = {
         company_name: formData.company_name || null,
         industry: formData.industry || null,
@@ -155,7 +154,7 @@ export function AddCompanyDialog({ onCompanyAdded }: AddCompanyDialogProps) {
 
       const { error } = await supabase
         .from('organisation_master')
-        .insert([dataToInsert])
+        .insert(dataToInsert)
 
       if (error) throw error
 
@@ -187,8 +186,6 @@ export function AddCompanyDialog({ onCompanyAdded }: AddCompanyDialogProps) {
         turn_over_inr_cr: "",
         no_of_offices_total: "",
         no_of_branch_offices: "",
-        turnover_range: "",
-        employee_range: "",
       })
       onCompanyAdded()
     } catch (error) {
@@ -276,35 +273,26 @@ export function AddCompanyDialog({ onCompanyAdded }: AddCompanyDialogProps) {
               </div>
 
               <div>
-                <Label htmlFor="employee_range">Employee Range</Label>
-                <Select value={formData.employee_range} onValueChange={(value) => setFormData(prev => ({ ...prev, employee_range: value }))}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select employee range..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {empRanges.map((range) => (
-                      <SelectItem key={range.id} value={range.employee_range}>
-                        {range.employee_range}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="employees">Number of Employees</Label>
+                <Input
+                  id="employees"
+                  type="number"
+                  value={formData.employees}
+                  onChange={(e) => setFormData(prev => ({ ...prev, employees: e.target.value }))}
+                  placeholder="Enter number of employees"
+                />
               </div>
 
               <div>
-                <Label htmlFor="turnover_range">Turnover Range</Label>
-                <Select value={formData.turnover_range} onValueChange={(value) => setFormData(prev => ({ ...prev, turnover_range: value }))}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select turnover range..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {turnovers.map((turnover) => (
-                      <SelectItem key={turnover.id} value={turnover.turnover_range}>
-                        {turnover.turnover_range}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="annual_revenue">Annual Revenue</Label>
+                <Input
+                  id="annual_revenue"
+                  type="number"
+                  step="0.01"
+                  value={formData.annual_revenue}
+                  onChange={(e) => setFormData(prev => ({ ...prev, annual_revenue: e.target.value }))}
+                  placeholder="Enter annual revenue"
+                />
               </div>
 
               <div>

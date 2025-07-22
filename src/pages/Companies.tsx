@@ -33,6 +33,22 @@ interface Company {
   employees: number | null
   headquarters: string | null
   annual_revenue: number | null
+  city_id: number | null
+  address_type: string | null
+  postal_address_1: string | null
+  postal_address_2: string | null
+  postal_address_3: string | null
+  std: string | null
+  phone_1: string | null
+  phone_2: string | null
+  fax: string | null
+  company_mobile_number: string | null
+  common_email_id: string | null
+  website: string | null
+  no_of_employees_total: number | null
+  turn_over_inr_cr: number | null
+  no_of_offices_total: number | null
+  no_of_branch_offices: number | null
 }
 
 const Companies = () => {
