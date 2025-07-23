@@ -40,6 +40,8 @@ interface Contact {
   mobile_number: string | null
   gender: string | null
   salute: string | null
+  City_ID: number | null
+  Email_Optin: string | null
   company_name?: string | null
 }
 
