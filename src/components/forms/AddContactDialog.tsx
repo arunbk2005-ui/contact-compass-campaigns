@@ -164,9 +164,10 @@ export function AddContactDialog({ onContactAdded, companies }: AddContactDialog
       onContactAdded()
     } catch (error) {
       console.error('Error adding contact:', error)
+      console.error('Error details:', JSON.stringify(error, null, 2))
       toast({
         title: "Error",
-        description: "Failed to add contact",
+        description: `Failed to add contact: ${error.message || 'Unknown error'}`,
         variant: "destructive",
       })
     } finally {
