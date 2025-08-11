@@ -13,6 +13,7 @@ import Departments from "./pages/Departments";
 import JobLevels from "./pages/JobLevels";
 import CompTurnovers from "./pages/CompTurnovers";
 import EmpRanges from "./pages/EmpRanges";
+import Campaigns from "./pages/Campaigns";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,7 +29,7 @@ const App = () => (
             <Route path="/" element={<Dashboard />} />
             <Route path="/contacts" element={<Contacts />} />
             <Route path="/companies" element={<Companies />} />
-            <Route path="/campaigns" element={<div className="p-6"><h1 className="text-2xl font-bold">Campaigns - Coming Soon</h1></div>} />
+            <Route path="/campaigns" element={<Campaigns />} />
             <Route path="/audiences" element={<div className="p-6"><h1 className="text-2xl font-bold">Audiences - Coming Soon</h1></div>} />
             <Route path="/analytics" element={<div className="p-6"><h1 className="text-2xl font-bold">Analytics - Coming Soon</h1></div>} />
             <Route path="/industries" element={<Industries />} />

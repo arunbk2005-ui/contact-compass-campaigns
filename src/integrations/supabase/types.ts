@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      campaigns: {
+        Row: {
+          client_name: string
+          created_at: string
+          end_date: string
+          id: string
+          list_size: number
+          name: string
+          servicing_lead: string
+          start_date: string
+          updated_at: string
+        }
+        Insert: {
+          client_name: string
+          created_at?: string
+          end_date: string
+          id?: string
+          list_size: number
+          name: string
+          servicing_lead: string
+          start_date: string
+          updated_at?: string
+        }
+        Update: {
+          client_name?: string
+          created_at?: string
+          end_date?: string
+          id?: string
+          list_size?: number
+          name?: string
+          servicing_lead?: string
+          start_date?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       city_master: {
         Row: {
           city: string | null
