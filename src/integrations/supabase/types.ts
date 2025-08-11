@@ -121,7 +121,7 @@ export type Database = {
           {
             foreignKeyName: "contact_master_City_ID_fkey"
             columns: ["City_ID"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "city_master"
             referencedColumns: ["city_id"]
           },
