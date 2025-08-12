@@ -14,6 +14,107 @@ export type Database = {
   }
   public: {
     Tables: {
+      audience_results: {
+        Row: {
+          city: string | null
+          city_id: number | null
+          company_id: number | null
+          company_name: string | null
+          contact_id: number | null
+          created_at: string
+          department: string | null
+          email: string | null
+          first_name: string | null
+          id: number
+          industry: string | null
+          job_level: string | null
+          last_name: string | null
+          phone: string | null
+          run_id: string
+          state: string | null
+        }
+        Insert: {
+          city?: string | null
+          city_id?: number | null
+          company_id?: number | null
+          company_name?: string | null
+          contact_id?: number | null
+          created_at?: string
+          department?: string | null
+          email?: string | null
+          first_name?: string | null
+          id?: number
+          industry?: string | null
+          job_level?: string | null
+          last_name?: string | null
+          phone?: string | null
+          run_id: string
+          state?: string | null
+        }
+        Update: {
+          city?: string | null
+          city_id?: number | null
+          company_id?: number | null
+          company_name?: string | null
+          contact_id?: number | null
+          created_at?: string
+          department?: string | null
+          email?: string | null
+          first_name?: string | null
+          id?: number
+          industry?: string | null
+          job_level?: string | null
+          last_name?: string | null
+          phone?: string | null
+          run_id?: string
+          state?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audience_results_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "audience_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audience_runs: {
+        Row: {
+          created_at: string
+          filters: Json
+          id: string
+          name: string | null
+          notes: string | null
+          source: string
+          status: string
+          total_results: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          filters: Json
+          id?: string
+          name?: string | null
+          notes?: string | null
+          source?: string
+          status?: string
+          total_results?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          filters?: Json
+          id?: string
+          name?: string | null
+          notes?: string | null
+          source?: string
+          status?: string
+          total_results?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       campaigns: {
         Row: {
           client_name: string
@@ -331,7 +432,31 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      build_audience: {
+        Args: { p_filters: Json; p_run_name?: string; p_save?: boolean }
+        Returns: string
+      }
+      get_audience_results: {
+        Args: { p_run_id: string }
+        Returns: {
+          city: string | null
+          city_id: number | null
+          company_id: number | null
+          company_name: string | null
+          contact_id: number | null
+          created_at: string
+          department: string | null
+          email: string | null
+          first_name: string | null
+          id: number
+          industry: string | null
+          job_level: string | null
+          last_name: string | null
+          phone: string | null
+          run_id: string
+          state: string | null
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
