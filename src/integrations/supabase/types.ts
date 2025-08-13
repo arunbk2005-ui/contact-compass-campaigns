@@ -136,6 +136,51 @@ export type Database = {
         }
         Relationships: []
       }
+      campaign_audience_allocations: {
+        Row: {
+          allocated_count: number
+          campaign_id: string
+          created_at: string
+          created_by: string
+          id: string
+          run_id: string
+          updated_at: string
+        }
+        Insert: {
+          allocated_count?: number
+          campaign_id: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          run_id: string
+          updated_at?: string
+        }
+        Update: {
+          allocated_count?: number
+          campaign_id?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          run_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_audience_allocations_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_audience_allocations_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "audience_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaigns: {
         Row: {
           client_name: string
