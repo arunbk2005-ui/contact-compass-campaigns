@@ -7,33 +7,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { Search, Filter, Download, Plus, Target, Users, Building2, Mail, Phone } from "lucide-react";
+import { Download, Target, Users, Building2, Mail, Phone, Plus, Filter, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-
-const basicFiltersSchema = z.object({
-  industry: z.string().optional(),
-  city_id: z.string().optional(),
-  job_level: z.string().optional(),
-  department: z.string().optional(),
-  has_email: z.boolean().default(false),
-  has_phone: z.boolean().default(false),
-  employee_min: z.string().optional(),
-  employee_max: z.string().optional(),
-  text_search: z.string().optional(),
-});
+import AudienceBuilder from "@/components/AudienceBuilder";
 
 const allocationSchema = z.object({
   campaign_id: z.string().min(1, "Please select a campaign"),
   allocated_count: z.string().min(1, "Please enter allocation count"),
 });
 
-type BasicFilters = z.infer<typeof basicFiltersSchema>;
 type AllocationData = z.infer<typeof allocationSchema>;
 
 interface AudienceRun {
@@ -71,21 +59,8 @@ export default function Audiences() {
   const [selectedRun, setSelectedRun] = useState<AudienceRun | null>(null);
   const [audienceResults, setAudienceResults] = useState<AudienceResult[]>([]);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-  const [industries, setIndustries] = useState<any[]>([]);
-  const [cities, setCities] = useState<any[]>([]);
-  const [departments, setDepartments] = useState<any[]>([]);
-  const [jobLevels, setJobLevels] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
   const [resultsLoading, setResultsLoading] = useState(false);
   const [showAllocationDialog, setShowAllocationDialog] = useState(false);
-
-  const basicForm = useForm<BasicFilters>({
-    resolver: zodResolver(basicFiltersSchema),
-    defaultValues: {
-      has_email: false,
-      has_phone: false,
-    },
-  });
 
   const allocationForm = useForm<AllocationData>({
     resolver: zodResolver(allocationSchema),
@@ -94,7 +69,6 @@ export default function Audiences() {
   useEffect(() => {
     fetchAudienceRuns();
     fetchCampaigns();
-    fetchDropdownData();
   }, []);
 
   const fetchAudienceRuns = async () => {
@@ -134,24 +108,6 @@ export default function Audiences() {
     }
   };
 
-  const fetchDropdownData = async () => {
-    try {
-      const [industriesRes, citiesRes, departmentsRes, jobLevelsRes] = await Promise.all([
-        supabase.from('industry_master').select('*'),
-        supabase.from('city_master').select('*'),
-        supabase.from('department_master').select('*'),
-        supabase.from('job_level_master').select('*'),
-      ]);
-
-      setIndustries(industriesRes.data || []);
-      setCities(citiesRes.data || []);
-      setDepartments(departmentsRes.data || []);
-      setJobLevels(jobLevelsRes.data || []);
-    } catch (error) {
-      console.error('Error fetching dropdown data:', error);
-    }
-  };
-
   const fetchAudienceResults = async (runId: string) => {
     setResultsLoading(true);
     try {
@@ -171,45 +127,6 @@ export default function Audiences() {
       toast.error('Failed to fetch audience results');
     } finally {
       setResultsLoading(false);
-    }
-  };
-
-  const onBasicFiltersSubmit = async (data: BasicFilters) => {
-    setLoading(true);
-    try {
-      const filters = {
-        ...data,
-        city_id: data.city_id ? parseInt(data.city_id) : undefined,
-        employee_min: data.employee_min ? parseInt(data.employee_min) : undefined,
-        employee_max: data.employee_max ? parseInt(data.employee_max) : undefined,
-      };
-
-      // Remove undefined values
-      Object.keys(filters).forEach(key => {
-        if (filters[key as keyof typeof filters] === undefined || filters[key as keyof typeof filters] === '') {
-          delete filters[key as keyof typeof filters];
-        }
-      });
-
-      const { data: runId, error } = await supabase.rpc('build_audience', {
-        p_filters: filters,
-        p_run_name: `Audience Run ${new Date().toLocaleString()}`,
-        p_save: true
-      });
-
-      if (error) {
-        console.error('Error building audience:', error);
-        toast.error('Failed to build audience');
-        return;
-      }
-
-      toast.success('Audience built successfully');
-      fetchAudienceRuns();
-    } catch (error) {
-      console.error('Error:', error);
-      toast.error('Failed to build audience');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -268,217 +185,7 @@ export default function Audiences() {
         </TabsList>
 
         <TabsContent value="builder">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Filter className="h-5 w-5" />
-                Basic Filters
-              </CardTitle>
-              <CardDescription>
-                Create a targeted audience using basic filtering criteria
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Form {...basicForm}>
-                <form onSubmit={basicForm.handleSubmit(onBasicFiltersSubmit)} className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <FormField
-                      control={basicForm.control}
-                      name="text_search"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Search</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                              <Input
-                                placeholder="Search companies, contacts..."
-                                className="pl-9"
-                                {...field}
-                              />
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={basicForm.control}
-                      name="industry"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Industry</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select industry" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {industries.map((industry) => (
-                                <SelectItem key={industry.industry_id} value={industry.industry_vertical || ''}>
-                                  {industry.industry_vertical}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={basicForm.control}
-                      name="city_id"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>City</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select city" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {cities.map((city) => (
-                                <SelectItem key={city.city_id} value={city.city_id.toString()}>
-                                  {city.city}, {city.state}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={basicForm.control}
-                      name="job_level"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Job Level</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select job level" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {jobLevels.map((level) => (
-                                <SelectItem key={level.id} value={level.job_level_name}>
-                                  {level.job_level_name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={basicForm.control}
-                      name="department"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Department</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select department" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {departments.map((dept) => (
-                                <SelectItem key={dept.id} value={dept.department_name}>
-                                  {dept.department_name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <div className="flex gap-4">
-                      <FormField
-                        control={basicForm.control}
-                        name="employee_min"
-                        render={({ field }) => (
-                          <FormItem className="flex-1">
-                            <FormLabel>Min Employees</FormLabel>
-                            <FormControl>
-                              <Input type="number" placeholder="Min" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={basicForm.control}
-                        name="employee_max"
-                        render={({ field }) => (
-                          <FormItem className="flex-1">
-                            <FormLabel>Max Employees</FormLabel>
-                            <FormControl>
-                              <Input type="number" placeholder="Max" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex gap-6">
-                    <FormField
-                      control={basicForm.control}
-                      name="has_email"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                          <FormControl>
-                            <Checkbox
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                            />
-                          </FormControl>
-                          <div className="space-y-1 leading-none">
-                            <FormLabel>Has Email</FormLabel>
-                          </div>
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={basicForm.control}
-                      name="has_phone"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                          <FormControl>
-                            <Checkbox
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                            />
-                          </FormControl>
-                          <div className="space-y-1 leading-none">
-                            <FormLabel>Has Phone</FormLabel>
-                          </div>
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <Button type="submit" disabled={loading}>
-                    {loading ? "Building..." : "Build Audience"}
-                    <Target className="ml-2 h-4 w-4" />
-                  </Button>
-                </form>
-              </Form>
-            </CardContent>
-          </Card>
+          <AudienceBuilder onAudienceSaved={fetchAudienceRuns} />
         </TabsContent>
 
         <TabsContent value="runs">
