@@ -24,6 +24,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { useToast } from "@/hooks/use-toast"
 
 interface Contact {
   contact_id: number
@@ -59,11 +60,31 @@ const Contacts = () => {
   const [loading, setLoading] = useState(true)
   const [editContact, setEditContact] = useState<Contact | null>(null)
   const [kpis, setKpis] = useState<ContactKPIs>({ total: 0, withEmail: 0, withPhone: 0, newLast30d: 0 })
+  const { toast } = useToast()
 
   useEffect(() => {
     fetchContacts()
     fetchCompanies()
-    fetchKPIs()
+    
+    // Set up realtime subscription for live updates
+    const contactsSubscription = supabase
+      .channel('contacts-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'contact_master'
+        },
+        () => {
+          fetchContacts() // This will also update KPIs
+        }
+      )
+      .subscribe()
+
+    return () => {
+      contactsSubscription.unsubscribe()
+    }
   }, [])
 
   const fetchContacts = async () => {
@@ -84,6 +105,7 @@ const Contacts = () => {
       })) || []
       
       setContacts(contactsWithCompany)
+      updateKPIsFromContacts(contactsWithCompany)
     } catch (error) {
       console.error('Error fetching contacts:', error)
     } finally {
@@ -91,48 +113,61 @@ const Contacts = () => {
     }
   }
 
-  const fetchKPIs = async () => {
+  const updateKPIsFromContacts = (contactsList: Contact[]) => {
+    const total = contactsList.length
+    const withEmail = contactsList.filter(c => 
+      c.official_email_id && c.official_email_id.trim() !== '' ||
+      c.personal_email_id && c.personal_email_id.trim() !== ''
+    ).length
+    const withPhone = contactsList.filter(c => 
+      c.mobile_number && c.mobile_number.trim() !== '' ||
+      c.direct_phone_number && c.direct_phone_number.trim() !== ''
+    ).length
+
+    // For "new last 30d", we'll use the highest contact_ids as proxy for recent additions
+    // This assumes contact_id increments with time (which it should with our auto-increment)
+    const sortedByContactId = [...contactsList].sort((a, b) => b.contact_id - a.contact_id)
+    const recentThreshold = Math.max(0, total - Math.floor(total * 0.1)) // Top 10% of contact_ids
+    const newLast30d = sortedByContactId.slice(0, Math.min(sortedByContactId.length, Math.floor(total * 0.1))).length
+
+    setKpis({
+      total,
+      withEmail,
+      withPhone,
+      newLast30d
+    })
+  }
+
+  const handleDeleteContact = async (contactId: number) => {
+    if (!confirm('Are you sure you want to delete this contact?')) return
+
     try {
-      // Get total contacts
-      const { count: totalCount } = await supabase
+      const { error } = await supabase
         .from('contact_master')
-        .select('*', { count: 'exact', head: true })
+        .delete()
+        .eq('contact_id', contactId)
 
-      // Get contacts with email
-      const { count: emailCount } = await supabase
-        .from('contact_master')
-        .select('*', { count: 'exact', head: true })
-        .not('official_email_id', 'is', null)
+      if (error) throw error
 
-      // Get contacts with phone
-      const { count: phoneCount } = await supabase
-        .from('contact_master')
-        .select('*', { count: 'exact', head: true })
-        .or('mobile_number.not.is.null,direct_phone_number.not.is.null')
-
-      // Get new contacts in last 30 days (assuming we had a created_at column, but since we don't, we'll use contact_id as proxy)
-      const thirtyDaysAgo = new Date()
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-      
-      // Since there's no created_at, we'll estimate based on recent contact_ids
-      const { data: recentData } = await supabase
-        .from('contact_master')
-        .select('contact_id')
-        .order('contact_id', { ascending: false })
-        .limit(100)
-
-      // Estimate new contacts (this is a rough approximation)
-      const newLast30d = Math.min(recentData?.length || 0, Math.floor((totalCount || 0) * 0.1))
-
-      setKpis({
-        total: totalCount || 0,
-        withEmail: emailCount || 0,
-        withPhone: phoneCount || 0,
-        newLast30d
+      // The realtime subscription will automatically refresh the data
+      toast({
+        title: "Success",
+        description: "Contact deleted successfully",
       })
     } catch (error) {
-      console.error('Error fetching KPIs:', error)
+      console.error('Error deleting contact:', error)
+      toast({
+        title: "Error",
+        description: "Failed to delete contact",
+        variant: "destructive",
+      })
     }
+  }
+
+  const fetchKPIs = async () => {
+    // This is now handled by updateKPIsFromContacts after fetching contacts
+    // Keeping this function for backward compatibility but it will use the contacts data
+    updateKPIsFromContacts(contacts)
   }
 
   const fetchCompanies = async () => {
@@ -196,8 +231,8 @@ const Contacts = () => {
         </div>
         
         <div className="flex gap-2">
-          <AddContactDialog onContactAdded={() => { fetchContacts(); fetchKPIs(); }} companies={companies} />
-          <BulkUploadDialog onUploadComplete={() => { fetchContacts(); fetchKPIs(); }} />
+          <AddContactDialog onContactAdded={fetchContacts} companies={companies} />
+          <BulkUploadDialog onUploadComplete={fetchContacts} />
         </div>
       </div>
 
@@ -218,7 +253,7 @@ const Contacts = () => {
             <Button 
               variant="outline" 
               className="gap-2"
-              onClick={() => { fetchContacts(); fetchKPIs(); }}
+              onClick={fetchContacts}
             >
               <Filter className="w-4 h-4" />
               Refresh
@@ -251,7 +286,10 @@ const Contacts = () => {
                       <Edit className="w-4 h-4 mr-2" />
                       Edit Contact
                     </DropdownMenuItem>
-                    <DropdownMenuItem className="text-destructive">
+                    <DropdownMenuItem 
+                      className="text-destructive"
+                      onClick={() => handleDeleteContact(contact.contact_id)}
+                    >
                       <Trash2 className="w-4 h-4 mr-2" />
                       Delete Contact
                     </DropdownMenuItem>
@@ -339,7 +377,7 @@ const Contacts = () => {
           companies={companies}
           open={!!editContact}
           onOpenChange={(open) => !open && setEditContact(null)}
-          onContactUpdated={() => { fetchContacts(); fetchKPIs(); }}
+          onContactUpdated={fetchContacts}
         />
       )}
     </div>
