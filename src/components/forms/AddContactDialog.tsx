@@ -107,20 +107,8 @@ export function AddContactDialog({ onContactAdded, companies }: AddContactDialog
     setLoading(true)
 
     try {
-      // Get the next available contact_id
-      const { data: maxIdData, error: maxIdError } = await supabase
-        .from('contact_master')
-        .select('contact_id')
-        .order('contact_id', { ascending: false })
-        .limit(1)
-
-      if (maxIdError) throw maxIdError
-
-      const nextId = maxIdData?.[0]?.contact_id ? maxIdData[0].contact_id + 1 : 1
-
       const dataToInsert: any = {
         ...formData,
-        contact_id: nextId,
         company_id: formData.company_id ? parseInt(formData.company_id) : null,
         City_ID: formData.City_ID ? parseInt(formData.City_ID) : null,
       }

@@ -287,7 +287,7 @@ export type Database = {
         Insert: {
           City_ID?: number | null
           company_id?: number | null
-          contact_id: number
+          contact_id?: number
           department?: string | null
           designation?: string | null
           direct_phone_number?: string | null
