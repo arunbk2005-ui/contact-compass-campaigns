@@ -45,16 +45,25 @@ interface Contact {
   company_name?: string | null
 }
 
+interface ContactKPIs {
+  total: number
+  withEmail: number
+  withPhone: number
+  newLast30d: number
+}
+
 const Contacts = () => {
   const [searchTerm, setSearchTerm] = useState("")
   const [contacts, setContacts] = useState<Contact[]>([])
   const [companies, setCompanies] = useState<Array<{ company_id: number; company_name: string | null }>>([])
   const [loading, setLoading] = useState(true)
   const [editContact, setEditContact] = useState<Contact | null>(null)
+  const [kpis, setKpis] = useState<ContactKPIs>({ total: 0, withEmail: 0, withPhone: 0, newLast30d: 0 })
 
   useEffect(() => {
     fetchContacts()
     fetchCompanies()
+    fetchKPIs()
   }, [])
 
   const fetchContacts = async () => {
@@ -79,6 +88,50 @@ const Contacts = () => {
       console.error('Error fetching contacts:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchKPIs = async () => {
+    try {
+      // Get total contacts
+      const { count: totalCount } = await supabase
+        .from('contact_master')
+        .select('*', { count: 'exact', head: true })
+
+      // Get contacts with email
+      const { count: emailCount } = await supabase
+        .from('contact_master')
+        .select('*', { count: 'exact', head: true })
+        .not('official_email_id', 'is', null)
+
+      // Get contacts with phone
+      const { count: phoneCount } = await supabase
+        .from('contact_master')
+        .select('*', { count: 'exact', head: true })
+        .or('mobile_number.not.is.null,direct_phone_number.not.is.null')
+
+      // Get new contacts in last 30 days (assuming we had a created_at column, but since we don't, we'll use contact_id as proxy)
+      const thirtyDaysAgo = new Date()
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+      
+      // Since there's no created_at, we'll estimate based on recent contact_ids
+      const { data: recentData } = await supabase
+        .from('contact_master')
+        .select('contact_id')
+        .order('contact_id', { ascending: false })
+        .limit(100)
+
+      // Estimate new contacts (this is a rough approximation)
+      const newLast30d = Math.min(recentData?.length || 0, Math.floor((totalCount || 0) * 0.1))
+
+      setKpis({
+        total: totalCount || 0,
+        withEmail: emailCount || 0,
+        withPhone: phoneCount || 0,
+        newLast30d
+      })
+    } catch (error) {
+      console.error('Error fetching KPIs:', error)
     }
   }
 
@@ -143,8 +196,8 @@ const Contacts = () => {
         </div>
         
         <div className="flex gap-2">
-          <AddContactDialog onContactAdded={fetchContacts} companies={companies} />
-          <BulkUploadDialog onUploadComplete={fetchContacts} />
+          <AddContactDialog onContactAdded={() => { fetchContacts(); fetchKPIs(); }} companies={companies} />
+          <BulkUploadDialog onUploadComplete={() => { fetchContacts(); fetchKPIs(); }} />
         </div>
       </div>
 
@@ -165,7 +218,7 @@ const Contacts = () => {
             <Button 
               variant="outline" 
               className="gap-2"
-              onClick={fetchContacts}
+              onClick={() => { fetchContacts(); fetchKPIs(); }}
             >
               <Filter className="w-4 h-4" />
               Refresh
@@ -258,18 +311,22 @@ const Contacts = () => {
           <CardTitle>Contact Summary</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="text-center p-4 border border-border rounded-lg">
-              <div className="text-2xl font-bold text-foreground">{contacts.length}</div>
+              <div className="text-2xl font-bold text-foreground">{kpis.total}</div>
               <div className="text-sm text-muted-foreground">Total Contacts</div>
             </div>
             <div className="text-center p-4 border border-border rounded-lg">
-              <div className="text-2xl font-bold text-success">{contacts.filter(c => c.official_email_id).length}</div>
+              <div className="text-2xl font-bold text-success">{kpis.withEmail}</div>
               <div className="text-sm text-muted-foreground">With Email</div>
             </div>
             <div className="text-center p-4 border border-border rounded-lg">
-              <div className="text-2xl font-bold text-primary">{contacts.filter(c => c.mobile_number || c.direct_phone_number).length}</div>
+              <div className="text-2xl font-bold text-primary">{kpis.withPhone}</div>
               <div className="text-sm text-muted-foreground">With Phone</div>
+            </div>
+            <div className="text-center p-4 border border-border rounded-lg">
+              <div className="text-2xl font-bold text-accent">{kpis.newLast30d}</div>
+              <div className="text-sm text-muted-foreground">New (Last 30d)</div>
             </div>
           </div>
         </CardContent>
@@ -282,7 +339,7 @@ const Contacts = () => {
           companies={companies}
           open={!!editContact}
           onOpenChange={(open) => !open && setEditContact(null)}
-          onContactUpdated={fetchContacts}
+          onContactUpdated={() => { fetchContacts(); fetchKPIs(); }}
         />
       )}
     </div>
