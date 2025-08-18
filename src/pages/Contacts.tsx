@@ -1,8 +1,11 @@
 import { useState, useEffect } from "react"
+import { useQueryClient } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
 import { AddContactDialog } from "@/components/forms/AddContactDialog"
 import { EditContactDialog } from "@/components/forms/EditContactDialog"
 import { BulkUploadDialog } from "@/components/forms/BulkUploadDialog"
+import { SummaryTiles } from "@/components/ui/summary-tiles"
+import { useContactSummary } from "@/hooks/useContactSummary"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -59,8 +62,9 @@ const Contacts = () => {
   const [companies, setCompanies] = useState<Array<{ company_id: number; company_name: string | null }>>([])
   const [loading, setLoading] = useState(true)
   const [editContact, setEditContact] = useState<Contact | null>(null)
-  const [kpis, setKpis] = useState<ContactKPIs>({ total: 0, withEmail: 0, withPhone: 0, newLast30d: 0 })
   const { toast } = useToast()
+  const queryClient = useQueryClient()
+  const { data: summary = { total: 0, with_email: 0, with_mobile: 0, new_30d: 0 } } = useContactSummary()
 
   useEffect(() => {
     fetchContacts()
@@ -105,7 +109,7 @@ const Contacts = () => {
       })) || []
       
       setContacts(contactsWithCompany)
-      updateKPIsFromContacts(contactsWithCompany)
+      queryClient.invalidateQueries({ queryKey: ['contacts:summary'] })
     } catch (error) {
       console.error('Error fetching contacts:', error)
     } finally {
@@ -113,30 +117,6 @@ const Contacts = () => {
     }
   }
 
-  const updateKPIsFromContacts = (contactsList: Contact[]) => {
-    const total = contactsList.length
-    const withEmail = contactsList.filter(c => 
-      c.official_email_id && c.official_email_id.trim() !== '' ||
-      c.personal_email_id && c.personal_email_id.trim() !== ''
-    ).length
-    const withPhone = contactsList.filter(c => 
-      c.mobile_number && c.mobile_number.trim() !== '' ||
-      c.direct_phone_number && c.direct_phone_number.trim() !== ''
-    ).length
-
-    // For "new last 30d", we'll use the highest contact_ids as proxy for recent additions
-    // This assumes contact_id increments with time (which it should with our auto-increment)
-    const sortedByContactId = [...contactsList].sort((a, b) => b.contact_id - a.contact_id)
-    const recentThreshold = Math.max(0, total - Math.floor(total * 0.1)) // Top 10% of contact_ids
-    const newLast30d = sortedByContactId.slice(0, Math.min(sortedByContactId.length, Math.floor(total * 0.1))).length
-
-    setKpis({
-      total,
-      withEmail,
-      withPhone,
-      newLast30d
-    })
-  }
 
   const handleDeleteContact = async (contactId: number) => {
     if (!confirm('Are you sure you want to delete this contact?')) return
@@ -150,6 +130,7 @@ const Contacts = () => {
       if (error) throw error
 
       // The realtime subscription will automatically refresh the data
+      queryClient.invalidateQueries({ queryKey: ['contacts:summary'] })
       toast({
         title: "Success",
         description: "Contact deleted successfully",
@@ -164,11 +145,6 @@ const Contacts = () => {
     }
   }
 
-  const fetchKPIs = async () => {
-    // This is now handled by updateKPIsFromContacts after fetching contacts
-    // Keeping this function for backward compatibility but it will use the contacts data
-    updateKPIsFromContacts(contacts)
-  }
 
   const fetchCompanies = async () => {
     try {
@@ -231,8 +207,19 @@ const Contacts = () => {
         </div>
         
         <div className="flex gap-2">
-          <AddContactDialog onContactAdded={fetchContacts} companies={companies} />
-          <BulkUploadDialog onUploadComplete={fetchContacts} />
+          <AddContactDialog 
+            onContactAdded={() => {
+              fetchContacts()
+              queryClient.invalidateQueries({ queryKey: ['contacts:summary'] })
+            }} 
+            companies={companies} 
+          />
+          <BulkUploadDialog 
+            onUploadComplete={() => {
+              fetchContacts()
+              queryClient.invalidateQueries({ queryKey: ['contacts:summary'] })
+            }} 
+          />
         </div>
       </div>
 
@@ -343,32 +330,36 @@ const Contacts = () => {
         ))}
       </div>
 
-      {/* Summary Stats */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Contact Summary</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="text-center p-4 border border-border rounded-lg">
-              <div className="text-2xl font-bold text-foreground">{kpis.total}</div>
-              <div className="text-sm text-muted-foreground">Total Contacts</div>
-            </div>
-            <div className="text-center p-4 border border-border rounded-lg">
-              <div className="text-2xl font-bold text-success">{kpis.withEmail}</div>
-              <div className="text-sm text-muted-foreground">With Email</div>
-            </div>
-            <div className="text-center p-4 border border-border rounded-lg">
-              <div className="text-2xl font-bold text-primary">{kpis.withPhone}</div>
-              <div className="text-sm text-muted-foreground">With Phone</div>
-            </div>
-            <div className="text-center p-4 border border-border rounded-lg">
-              <div className="text-2xl font-bold text-accent">{kpis.newLast30d}</div>
-              <div className="text-sm text-muted-foreground">New (Last 30d)</div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Contact Summary */}
+      <SummaryTiles
+        title="Contact Summary"
+        tiles={[
+          {
+            title: "Total",
+            value: summary.total,
+            description: "Total Contacts",
+            colorClass: "text-foreground"
+          },
+          {
+            title: "With Email",
+            value: summary.with_email,
+            description: "With Email",
+            colorClass: "text-success"
+          },
+          {
+            title: "With Mobile",
+            value: summary.with_mobile,
+            description: "With Mobile",
+            colorClass: "text-primary"
+          },
+          {
+            title: "New 30d",
+            value: summary.new_30d,
+            description: "New (Last 30d)",
+            colorClass: "text-accent"
+          }
+        ]}
+      />
 
       {/* Edit Contact Dialog */}
       {editContact && (
@@ -377,7 +368,10 @@ const Contacts = () => {
           companies={companies}
           open={!!editContact}
           onOpenChange={(open) => !open && setEditContact(null)}
-          onContactUpdated={fetchContacts}
+          onContactUpdated={() => {
+            fetchContacts()
+            queryClient.invalidateQueries({ queryKey: ['contacts:summary'] })
+          }}
         />
       )}
     </div>

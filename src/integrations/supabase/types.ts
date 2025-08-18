@@ -544,6 +544,15 @@ export type Database = {
           state: string | null
         }[]
       }
+      get_contact_summary: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          new_30d: number
+          total: number
+          with_email: number
+          with_mobile: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
