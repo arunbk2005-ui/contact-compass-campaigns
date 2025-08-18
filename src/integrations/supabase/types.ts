@@ -579,6 +579,27 @@ export type Database = {
           total_count: number
         }[]
       }
+      safe_uuid_array: {
+        Args: { p: Json }
+        Returns: string[]
+      }
+      search_audience: {
+        Args: { p_filters: Json; p_page?: number; p_page_size?: number }
+        Returns: {
+          city: string
+          company_name: string
+          contact_id: number
+          department: string
+          email: string
+          full_name: string
+          industry: string
+          job_level: string
+          mobile: string
+          state: string
+          total_count: number
+          website: string
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "user"

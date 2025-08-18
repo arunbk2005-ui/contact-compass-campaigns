@@ -39,12 +39,15 @@ type SaveAudienceData = z.infer<typeof saveAudienceSchema>;
 
 interface PreviewResult {
   contact_id: number;
-  company_id: number;
+  company_id?: number; // optional (not used in UI)
   company_name: string | null;
-  first_name: string | null;
-  last_name: string | null;
+  // Support both legacy RPC (first_name/last_name/phone) and new RPC (full_name/mobile)
+  first_name?: string | null;
+  last_name?: string | null;
+  full_name?: string | null;
   email: string | null;
-  phone: string | null;
+  phone?: string | null;
+  mobile?: string | null;
   city: string | null;
   state: string | null;
   industry: string | null;
@@ -115,6 +118,22 @@ export default function AudienceBuilder({ onAudienceSaved }: AudienceBuilderProp
     }
   };
 
+  // Remove empty strings, null/undefined, empty arrays/objects
+  const pruneEmpty = (obj: any): any => {
+    if (Array.isArray(obj)) {
+      const arr = obj.map(pruneEmpty).filter((v) => v !== undefined && v !== null && !(Array.isArray(v) && v.length === 0));
+      return arr.length ? arr : undefined;
+    }
+    if (obj && typeof obj === 'object') {
+      const entries = Object.entries(obj)
+        .map(([k, v]) => [k, pruneEmpty(v)] as const)
+        .filter(([, v]) => v !== undefined && v !== null && !(Array.isArray(v) && v.length === 0) && !(typeof v === 'object' && !Array.isArray(v) && Object.keys(v).length === 0));
+      return entries.length ? Object.fromEntries(entries) : undefined;
+    }
+    if (obj === '' || obj === null || obj === undefined) return undefined;
+    return obj;
+  };
+
   const previewAudience = useCallback(async (page: number = 1) => {
     setPreviewLoading(true);
     try {
@@ -126,23 +145,21 @@ export default function AudienceBuilder({ onAudienceSaved }: AudienceBuilderProp
         employee_max: formData.employee_max ? parseInt(formData.employee_max) : undefined,
       };
 
-      // Remove undefined values
-      Object.keys(filters).forEach(key => {
-        if (filters[key as keyof typeof filters] === undefined || filters[key as keyof typeof filters] === '') {
-          delete filters[key as keyof typeof filters];
-        }
-      });
+      // Clean filters: remove empty strings, null/undefined, empty arrays/objects
+      const cleaned = pruneEmpty(filters) ?? {};
 
-      const offset = (page - 1) * pageSize;
-      const { data, error } = await supabase.rpc('preview_audience', {
-        p_filters: filters,
-        p_limit: pageSize,
-        p_offset: offset
+      const safePage = Math.max(1, page || 1);
+      const safePageSize = Math.max(10, Math.min(200, pageSize || 20));
+
+      const { data, error } = await supabase.rpc('search_audience', {
+        p_filters: cleaned,
+        p_page: safePage,
+        p_page_size: safePageSize,
       });
 
       if (error) {
         console.error('Error previewing audience:', error);
-        toast.error('Failed to preview audience');
+        toast.error(`Preview failed: ${error.message}`);
         return;
       }
 
@@ -597,7 +614,7 @@ export default function AudienceBuilder({ onAudienceSaved }: AudienceBuilderProp
                       <TableCell>
                         <div>
                           <div className="font-medium">
-                            {[result.first_name, result.last_name].filter(Boolean).join(' ') || 'N/A'}
+                            {result.full_name || [result.first_name, result.last_name].filter(Boolean).join(' ') || 'N/A'}
                           </div>
                           <div className="text-sm text-muted-foreground">{result.job_level}</div>
                         </div>
@@ -627,7 +644,7 @@ export default function AudienceBuilder({ onAudienceSaved }: AudienceBuilderProp
                               Email
                             </Badge>
                           )}
-                          {result.phone && (
+                          {(result.phone || result.mobile) && (
                             <Badge variant="outline" className="text-xs">
                               <Phone className="h-3 w-3 mr-1" />
                               Phone
