@@ -1,45 +1,42 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { 
-  Users, 
-  Building2, 
-  Megaphone, 
-  TrendingUp, 
+import {
+  Users,
+  Building2,
+  Megaphone,
+  TrendingUp,
   Target,
   Mail,
   Phone,
   Plus,
-  ArrowUpRight,
   Activity
 } from "lucide-react"
+import { useDashboardStats } from "@/hooks/useDashboardStats"
 
 const Dashboard = () => {
+  const { data: dashboardStats } = useDashboardStats()
   const stats = [
     {
       title: "Total Contacts",
-      value: "12,486",
-      change: "+12%",
+      value: dashboardStats?.totalContacts?.toLocaleString() || "0",
       icon: Users,
       color: "text-primary"
     },
     {
       title: "Companies",
-      value: "2,847",
-      change: "+8%",
+      value: dashboardStats?.totalCompanies?.toLocaleString() || "0",
       icon: Building2,
       color: "text-accent"
     },
     {
       title: "Active Campaigns",
-      value: "24",
-      change: "+15%",
+      value: dashboardStats?.activeCampaigns?.toLocaleString() || "0",
       icon: Megaphone,
       color: "text-success"
     },
     {
       title: "Response Rate",
-      value: "18.3%",
-      change: "+2.4%",
+      value: `${dashboardStats?.responseRate?.toFixed(1) || 0}%`,
       icon: TrendingUp,
       color: "text-warning"
     }
@@ -87,11 +84,6 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-foreground">{stat.value}</div>
-              <div className="flex items-center gap-1 text-sm">
-                <ArrowUpRight className="w-3 h-3 text-success" />
-                <span className="text-success font-medium">{stat.change}</span>
-                <span className="text-muted-foreground">from last month</span>
-              </div>
             </CardContent>
           </Card>
         ))}

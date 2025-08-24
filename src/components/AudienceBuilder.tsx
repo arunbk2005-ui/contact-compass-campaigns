@@ -226,11 +226,10 @@ export default function AudienceBuilder({ onAudienceSaved }: AudienceBuilderProp
     try {
       const updates: { name: string; notes?: string } = { name: saveData.name };
       if (saveData.notes) updates.notes = saveData.notes;
-
       const { error } = await supabase
-        .from('audience_runs')
+        .from("audience_runs")
         .update(updates)
-        .eq('id', runId);
+        .eq("id", runId);
 
       if (error) {
         console.error('Error saving audience:', error);
