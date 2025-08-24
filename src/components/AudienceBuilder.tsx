@@ -17,7 +17,6 @@ import { Search, Filter, Save, Eye, Users, Mail, Phone, Loader2, RotateCcw } fro
 import { supabase } from "@/integrations/supabase/client";
 import { Textarea } from "@/components/ui/textarea";
 import type { Database } from "@/integrations/supabase/types";
-
 const audienceFiltersSchema = z.object({
   industry: z.string().optional(),
   city_id: z.string().optional(),
@@ -214,9 +213,6 @@ export default function AudienceBuilder({ onAudienceSaved }: AudienceBuilderProp
     filtersForm.reset({ has_email: false, has_phone: false });
     setPreviewResults([]);
     setTotalCount(0);
-    setRunId(null);
-  };
-
   const saveAudience = async (saveData: SaveAudienceData) => {
     if (!runId) {
       toast.error('No audience to save');
@@ -534,7 +530,6 @@ export default function AudienceBuilder({ onAudienceSaved }: AudienceBuilderProp
                   </Button>
                   <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
                     <DialogTrigger asChild>
-                      <Button disabled={totalCount === 0 || !runId}>
                         <Save className="h-4 w-4 mr-2" />
                         Save Audience
                       </Button>
