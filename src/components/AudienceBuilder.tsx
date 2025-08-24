@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { Search, Filter, Save, Eye, Users, Building2, Mail, Phone, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Textarea } from "@/components/ui/textarea";
+import type { Database } from "@/integrations/supabase/types";
 
 const audienceFiltersSchema = z.object({
   industry: z.string().optional(),
@@ -37,6 +38,11 @@ const saveAudienceSchema = z.object({
 type AudienceFilters = z.infer<typeof audienceFiltersSchema>;
 type SaveAudienceData = z.infer<typeof saveAudienceSchema>;
 
+type Industry = Database["public"]["Tables"]["industry_master"]["Row"];
+type City = Database["public"]["Tables"]["city_master"]["Row"];
+type Department = Database["public"]["Tables"]["department_master"]["Row"];
+type JobLevel = Database["public"]["Tables"]["job_level_master"]["Row"];
+
 interface PreviewResult {
   contact_id: number;
   company_id?: number; // optional (not used in UI)
@@ -57,15 +63,38 @@ interface PreviewResult {
 }
 
 interface DropdownData {
-  industries: any[];
-  cities: any[];
-  departments: any[];
-  jobLevels: any[];
+  industries: Industry[];
+  cities: City[];
+  departments: Department[];
+  jobLevels: JobLevel[];
 }
 
 interface AudienceBuilderProps {
   onAudienceSaved?: () => void;
 }
+
+const pruneEmpty = (obj: unknown): unknown => {
+  if (Array.isArray(obj)) {
+    const arr = obj
+      .map(pruneEmpty)
+      .filter((v) => v !== undefined && v !== null && !(Array.isArray(v) && v.length === 0));
+    return arr.length ? arr : undefined;
+  }
+  if (obj && typeof obj === "object") {
+    const entries = Object.entries(obj as Record<string, unknown>)
+      .map(([k, v]) => [k, pruneEmpty(v)] as const)
+      .filter(
+        ([, v]) =>
+          v !== undefined &&
+          v !== null &&
+          !(Array.isArray(v) && v.length === 0) &&
+          !(typeof v === "object" && !Array.isArray(v) && Object.keys(v as object).length === 0)
+      );
+    return entries.length ? Object.fromEntries(entries) : undefined;
+  }
+  if (obj === "" || obj === null || obj === undefined || obj === false) return undefined;
+  return obj;
+};
 
 export default function AudienceBuilder({ onAudienceSaved }: AudienceBuilderProps) {
   const [previewResults, setPreviewResults] = useState<PreviewResult[]>([]);
@@ -116,22 +145,6 @@ export default function AudienceBuilder({ onAudienceSaved }: AudienceBuilderProp
     } catch (error) {
       console.error('Error fetching dropdown data:', error);
     }
-  };
-
-  // Remove empty strings, null/undefined, empty arrays/objects
-  const pruneEmpty = (obj: any): any => {
-    if (Array.isArray(obj)) {
-      const arr = obj.map(pruneEmpty).filter((v) => v !== undefined && v !== null && !(Array.isArray(v) && v.length === 0));
-      return arr.length ? arr : undefined;
-    }
-    if (obj && typeof obj === 'object') {
-      const entries = Object.entries(obj)
-        .map(([k, v]) => [k, pruneEmpty(v)] as const)
-        .filter(([, v]) => v !== undefined && v !== null && !(Array.isArray(v) && v.length === 0) && !(typeof v === 'object' && !Array.isArray(v) && Object.keys(v).length === 0));
-      return entries.length ? Object.fromEntries(entries) : undefined;
-    }
-    if (obj === '' || obj === null || obj === undefined) return undefined;
-    return obj;
   };
 
   const previewAudience = useCallback(async (page: number = 1) => {
@@ -194,15 +207,11 @@ export default function AudienceBuilder({ onAudienceSaved }: AudienceBuilderProp
         employee_max: formData.employee_max ? parseInt(formData.employee_max) : undefined,
       };
 
-      // Remove undefined values
-      Object.keys(filters).forEach(key => {
-        if (filters[key as keyof typeof filters] === undefined || filters[key as keyof typeof filters] === '') {
-          delete filters[key as keyof typeof filters];
-        }
-      });
+      // Clean filters: remove empty strings, null/undefined, empty arrays/objects and false booleans
+      const cleaned = pruneEmpty(filters) ?? {};
 
       const { data: runId, error } = await supabase.rpc('build_audience', {
-        p_filters: filters,
+        p_filters: cleaned,
         p_run_name: saveData.name,
         p_save: true
       });
