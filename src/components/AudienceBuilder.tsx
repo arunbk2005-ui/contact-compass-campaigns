@@ -13,9 +13,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Search, Filter, Save, Eye, Users, Building2, Mail, Phone, Loader2 } from "lucide-react";
+import { Search, Filter, Save, Eye, Users, Mail, Phone, Loader2, RotateCcw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Textarea } from "@/components/ui/textarea";
+import type { Database } from "@/integrations/supabase/types";
 
 const audienceFiltersSchema = z.object({
   industry: z.string().optional(),
@@ -37,6 +38,11 @@ const saveAudienceSchema = z.object({
 type AudienceFilters = z.infer<typeof audienceFiltersSchema>;
 type SaveAudienceData = z.infer<typeof saveAudienceSchema>;
 
+type Industry = Database["public"]["Tables"]["industry_master"]["Row"];
+type City = Database["public"]["Tables"]["city_master"]["Row"];
+type Department = Database["public"]["Tables"]["department_master"]["Row"];
+type JobLevel = Database["public"]["Tables"]["job_level_master"]["Row"];
+
 interface PreviewResult {
   contact_id: number;
   company_id?: number; // optional (not used in UI)
@@ -57,15 +63,38 @@ interface PreviewResult {
 }
 
 interface DropdownData {
-  industries: any[];
-  cities: any[];
-  departments: any[];
-  jobLevels: any[];
+  industries: Industry[];
+  cities: City[];
+  departments: Department[];
+  jobLevels: JobLevel[];
 }
 
 interface AudienceBuilderProps {
   onAudienceSaved?: () => void;
 }
+
+const pruneEmpty = (obj: unknown): unknown => {
+  if (Array.isArray(obj)) {
+    const arr = obj
+      .map(pruneEmpty)
+      .filter((v) => v !== undefined && v !== null && !(Array.isArray(v) && v.length === 0));
+    return arr.length ? arr : undefined;
+  }
+  if (obj && typeof obj === "object") {
+    const entries = Object.entries(obj as Record<string, unknown>)
+      .map(([k, v]) => [k, pruneEmpty(v)] as const)
+      .filter(
+        ([, v]) =>
+          v !== undefined &&
+          v !== null &&
+          !(Array.isArray(v) && v.length === 0) &&
+          !(typeof v === "object" && !Array.isArray(v) && Object.keys(v as object).length === 0)
+      );
+    return entries.length ? Object.fromEntries(entries) : undefined;
+  }
+  if (obj === "" || obj === null || obj === undefined || obj === false) return undefined;
+  return obj;
+};
 
 export default function AudienceBuilder({ onAudienceSaved }: AudienceBuilderProps) {
   const [previewResults, setPreviewResults] = useState<PreviewResult[]>([]);
@@ -75,6 +104,7 @@ export default function AudienceBuilder({ onAudienceSaved }: AudienceBuilderProp
   const [previewLoading, setPreviewLoading] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [runId, setRunId] = useState<string | null>(null);
   const [dropdownData, setDropdownData] = useState<DropdownData>({
     industries: [],
     cities: [],
@@ -118,22 +148,6 @@ export default function AudienceBuilder({ onAudienceSaved }: AudienceBuilderProp
     }
   };
 
-  // Remove empty strings, null/undefined, empty arrays/objects
-  const pruneEmpty = (obj: any): any => {
-    if (Array.isArray(obj)) {
-      const arr = obj.map(pruneEmpty).filter((v) => v !== undefined && v !== null && !(Array.isArray(v) && v.length === 0));
-      return arr.length ? arr : undefined;
-    }
-    if (obj && typeof obj === 'object') {
-      const entries = Object.entries(obj)
-        .map(([k, v]) => [k, pruneEmpty(v)] as const)
-        .filter(([, v]) => v !== undefined && v !== null && !(Array.isArray(v) && v.length === 0) && !(typeof v === 'object' && !Array.isArray(v) && Object.keys(v).length === 0));
-      return entries.length ? Object.fromEntries(entries) : undefined;
-    }
-    if (obj === '' || obj === null || obj === undefined) return undefined;
-    return obj;
-  };
-
   const previewAudience = useCallback(async (page: number = 1) => {
     setPreviewLoading(true);
     try {
@@ -150,6 +164,12 @@ export default function AudienceBuilder({ onAudienceSaved }: AudienceBuilderProp
 
       const safePage = Math.max(1, page || 1);
       const safePageSize = Math.max(10, Math.min(200, pageSize || 20));
+
+      // Save the full audience run while also fetching the paginated preview
+      const buildPromise = supabase.rpc('build_audience', {
+        p_filters: cleaned,
+        p_save: true,
+      });
 
       const { data, error } = await supabase.rpc('search_audience', {
         p_filters: cleaned,
@@ -170,6 +190,13 @@ export default function AudienceBuilder({ onAudienceSaved }: AudienceBuilderProp
         setTotalCount(0);
       }
       setCurrentPage(page);
+
+      const { data: newRunId, error: runError } = await buildPromise;
+      if (runError) {
+        console.error('Error saving audience run:', runError);
+      } else {
+        setRunId(newRunId);
+      }
     } catch (error) {
       console.error('Error:', error);
       toast.error('Failed to preview audience');
@@ -183,42 +210,32 @@ export default function AudienceBuilder({ onAudienceSaved }: AudienceBuilderProp
     previewAudience(1);
   }, [previewAudience]);
 
+  const clearFilters = () => {
+    filtersForm.reset({ has_email: false, has_phone: false });
+    setPreviewResults([]);
+    setTotalCount(0);
+    setRunId(null);
+  };
+
   const saveAudience = async (saveData: SaveAudienceData) => {
+    if (!runId) {
+      toast.error('No audience to save');
+      return;
+    }
     setSaveLoading(true);
     try {
-      const formData = filtersForm.getValues();
-      const filters = {
-        ...formData,
-        city_id: formData.city_id ? parseInt(formData.city_id) : undefined,
-        employee_min: formData.employee_min ? parseInt(formData.employee_min) : undefined,
-        employee_max: formData.employee_max ? parseInt(formData.employee_max) : undefined,
-      };
+      const updates: { name: string; notes?: string } = { name: saveData.name };
+      if (saveData.notes) updates.notes = saveData.notes;
 
-      // Remove undefined values
-      Object.keys(filters).forEach(key => {
-        if (filters[key as keyof typeof filters] === undefined || filters[key as keyof typeof filters] === '') {
-          delete filters[key as keyof typeof filters];
-        }
-      });
-
-      const { data: runId, error } = await supabase.rpc('build_audience', {
-        p_filters: filters,
-        p_run_name: saveData.name,
-        p_save: true
-      });
+      const { error } = await supabase
+        .from('audience_runs')
+        .update(updates)
+        .eq('id', runId);
 
       if (error) {
         console.error('Error saving audience:', error);
         toast.error('Failed to save audience');
         return;
-      }
-
-      // Update notes if provided
-      if (saveData.notes) {
-        await supabase
-          .from('audience_runs')
-          .update({ notes: saveData.notes })
-          .eq('id', runId);
       }
 
       toast.success('Audience saved successfully');
@@ -508,6 +525,15 @@ export default function AudienceBuilder({ onAudienceSaved }: AudienceBuilderProp
                   <Button
                     type="button"
                     variant="outline"
+                    onClick={clearFilters}
+                    disabled={previewLoading}
+                  >
+                    <RotateCcw className="h-4 w-4 mr-2" />
+                    Clear Filters
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
                     onClick={() => previewAudience(currentPage)}
                     disabled={previewLoading}
                   >
@@ -516,7 +542,7 @@ export default function AudienceBuilder({ onAudienceSaved }: AudienceBuilderProp
                   </Button>
                   <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
                     <DialogTrigger asChild>
-                      <Button disabled={totalCount === 0}>
+                      <Button disabled={totalCount === 0 || !runId}>
                         <Save className="h-4 w-4 mr-2" />
                         Save Audience
                       </Button>
