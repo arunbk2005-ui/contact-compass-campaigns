@@ -17,8 +17,6 @@ import { Search, Filter, Save, Eye, Users, Mail, Phone, Loader2, RotateCcw } fro
 import { supabase } from "@/integrations/supabase/client";
 import { Textarea } from "@/components/ui/textarea";
 import type { Database } from "@/integrations/supabase/types";
-import { pruneEmpty } from "@/lib/pruneEmpty";
-
 const audienceFiltersSchema = z.object({
   industry: z.string().optional(),
   city_id: z.string().optional(),
@@ -74,6 +72,29 @@ interface AudienceBuilderProps {
   onAudienceSaved?: () => void;
 }
 
+const pruneEmpty = (obj: unknown): unknown => {
+  if (Array.isArray(obj)) {
+    const arr = obj
+      .map(pruneEmpty)
+      .filter((v) => v !== undefined && v !== null && !(Array.isArray(v) && v.length === 0));
+    return arr.length ? arr : undefined;
+  }
+  if (obj && typeof obj === "object") {
+    const entries = Object.entries(obj as Record<string, unknown>)
+      .map(([k, v]) => [k, pruneEmpty(v)] as const)
+      .filter(
+        ([, v]) =>
+          v !== undefined &&
+          v !== null &&
+          !(Array.isArray(v) && v.length === 0) &&
+          !(typeof v === "object" && !Array.isArray(v) && Object.keys(v as object).length === 0)
+      );
+    return entries.length ? Object.fromEntries(entries) : undefined;
+  }
+  if (obj === "" || obj === null || obj === undefined || obj === false) return undefined;
+  return obj;
+};
+
 export default function AudienceBuilder({ onAudienceSaved }: AudienceBuilderProps) {
   const [previewResults, setPreviewResults] = useState<PreviewResult[]>([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -82,6 +103,7 @@ export default function AudienceBuilder({ onAudienceSaved }: AudienceBuilderProp
   const [previewLoading, setPreviewLoading] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [runId, setRunId] = useState<string | null>(null);
   const [dropdownData, setDropdownData] = useState<DropdownData>({
     industries: [],
     cities: [],
@@ -142,6 +164,12 @@ export default function AudienceBuilder({ onAudienceSaved }: AudienceBuilderProp
       const safePage = Math.max(1, page || 1);
       const safePageSize = Math.max(10, Math.min(200, pageSize || 20));
 
+      // Save the full audience run while also fetching the paginated preview
+      const buildPromise = supabase.rpc('build_audience', {
+        p_filters: cleaned,
+        p_save: true,
+      });
+
       const { data, error } = await supabase.rpc('search_audience', {
         p_filters: cleaned,
         p_page: safePage,
@@ -161,6 +189,13 @@ export default function AudienceBuilder({ onAudienceSaved }: AudienceBuilderProp
         setTotalCount(0);
       }
       setCurrentPage(page);
+
+      const { data: newRunId, error: runError } = await buildPromise;
+      if (runError) {
+        console.error('Error saving audience run:', runError);
+      } else {
+        setRunId(newRunId);
+      }
     } catch (error) {
       console.error('Error:', error);
       toast.error('Failed to preview audience');
@@ -178,40 +213,17 @@ export default function AudienceBuilder({ onAudienceSaved }: AudienceBuilderProp
     filtersForm.reset({ has_email: false, has_phone: false });
     setPreviewResults([]);
     setTotalCount(0);
-  };
   const saveAudience = async (saveData: SaveAudienceData) => {
+    if (!runId) {
+      toast.error('No audience to save');
+      return;
+    }
     setSaveLoading(true);
     try {
-      const formData = filtersForm.getValues();
-      const filters = {
-        ...formData,
-        city_id: formData.city_id ? parseInt(formData.city_id) : undefined,
-        employee_min: formData.employee_min ? parseInt(formData.employee_min) : undefined,
-        employee_max: formData.employee_max ? parseInt(formData.employee_max) : undefined,
-      };
-
-      const cleaned = pruneEmpty(filters) ?? {};
-
-      const { data: newRunId, error } = await supabase.rpc('build_audience', {
-        p_filters: cleaned,
-        p_run_name: saveData.name,
-        p_save: true,
-      });
-
       if (error) {
         console.error('Error saving audience:', error);
         toast.error('Failed to save audience');
         return;
-      }
-
-      if (saveData.notes) {
-        const { error: notesError } = await supabase
-          .from('audience_runs')
-          .update({ notes: saveData.notes })
-          .eq('id', newRunId);
-        if (notesError) {
-          console.error('Error saving audience notes:', notesError);
-        }
       }
 
       toast.success('Audience saved successfully');
@@ -518,7 +530,6 @@ export default function AudienceBuilder({ onAudienceSaved }: AudienceBuilderProp
                   </Button>
                   <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
                     <DialogTrigger asChild>
-                      <Button disabled={totalCount === 0 || previewLoading}>
                         <Save className="h-4 w-4 mr-2" />
                         Save Audience
                       </Button>
