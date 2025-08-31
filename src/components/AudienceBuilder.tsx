@@ -191,8 +191,9 @@ export default function AudienceBuilder({ onAudienceSaved }: AudienceBuilderProp
       setCurrentPage(page);
 
       const { data: newRunId, error: runError } = await buildPromise;
-      if (runError) {
+      if (runError || !newRunId) {
         console.error('Error saving audience run:', runError);
+        setRunId(null);
       } else {
         setRunId(newRunId);
       }
@@ -217,16 +218,40 @@ export default function AudienceBuilder({ onAudienceSaved }: AudienceBuilderProp
   };
 
   const saveAudience = async (saveData: SaveAudienceData) => {
-    if (!runId) {
-      toast.error('No audience to save');
-      return;
-    }
     setSaveLoading(true);
     try {
+      let finalRunId = runId;
+      if (!finalRunId) {
+        const formData = filtersForm.getValues();
+        const filters = {
+          ...formData,
+          city_id: formData.city_id ? parseInt(formData.city_id) : undefined,
+          employee_min: formData.employee_min ? parseInt(formData.employee_min) : undefined,
+          employee_max: formData.employee_max ? parseInt(formData.employee_max) : undefined,
+        };
+        const cleaned = pruneEmpty(filters) ?? {};
+        const { data: builtRunId, error: buildError } = await supabase.rpc(
+          'build_audience',
+          {
+            p_filters: cleaned,
+            p_run_name: saveData.name,
+            p_save: true,
+          }
+        );
+        if (buildError || !builtRunId) {
+          console.error('Error building audience run for save:', buildError);
+          toast.error('Failed to build audience');
+          setRunId(null);
+          return;
+        }
+        finalRunId = builtRunId;
+        setRunId(builtRunId);
+      }
+
       const { error } = await supabase
         .from('audience_runs')
         .update({ name: saveData.name, notes: saveData.notes })
-        .eq('id', runId);
+        .eq('id', finalRunId);
 
       if (error) {
         console.error('Error saving audience:', error);
@@ -540,7 +565,7 @@ export default function AudienceBuilder({ onAudienceSaved }: AudienceBuilderProp
                       <DialogTrigger asChild>
                         <Button
                           type="button"
-                          disabled={!runId || previewLoading}
+                          disabled={previewLoading}
                         >
                           <Save className="h-4 w-4 mr-2" />
                           Save Audience
