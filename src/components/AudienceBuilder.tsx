@@ -213,6 +213,9 @@ export default function AudienceBuilder({ onAudienceSaved }: AudienceBuilderProp
     filtersForm.reset({ has_email: false, has_phone: false });
     setPreviewResults([]);
     setTotalCount(0);
+    setRunId(null);
+  };
+
   const saveAudience = async (saveData: SaveAudienceData) => {
     if (!runId) {
       toast.error('No audience to save');
@@ -220,6 +223,11 @@ export default function AudienceBuilder({ onAudienceSaved }: AudienceBuilderProp
     }
     setSaveLoading(true);
     try {
+      const { error } = await supabase
+        .from('audience_runs')
+        .update({ name: saveData.name, notes: saveData.notes })
+        .eq('id', runId);
+
       if (error) {
         console.error('Error saving audience:', error);
         toast.error('Failed to save audience');
@@ -528,13 +536,17 @@ export default function AudienceBuilder({ onAudienceSaved }: AudienceBuilderProp
                     <Eye className="h-4 w-4 mr-2" />
                     Refresh Preview
                   </Button>
-                  <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
-                    <DialogTrigger asChild>
-                        <Save className="h-4 w-4 mr-2" />
-                        Save Audience
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
+                    <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
+                      <DialogTrigger asChild>
+                        <Button
+                          type="button"
+                          disabled={!runId || previewLoading}
+                        >
+                          <Save className="h-4 w-4 mr-2" />
+                          Save Audience
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
                       <DialogHeader>
                         <DialogTitle>Save Audience</DialogTitle>
                         <DialogDescription>
