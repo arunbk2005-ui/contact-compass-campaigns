@@ -114,8 +114,15 @@ export default function AudienceBuilder({ onAudienceSaved }: AudienceBuilderProp
   const filtersForm = useForm<AudienceFilters>({
     resolver: zodResolver(audienceFiltersSchema),
     defaultValues: {
+      industry: "",
+      city_id: "",
+      job_level: "",
+      department: "",
       has_email: false,
       has_phone: false,
+      employee_min: "",
+      employee_max: "",
+      text_search: "",
     },
   });
 
