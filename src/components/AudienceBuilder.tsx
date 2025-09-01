@@ -166,12 +166,12 @@ export default function AudienceBuilder({ onAudienceSaved }: AudienceBuilderProp
 
       // Save the full audience run while also fetching the paginated preview
       const buildPromise = supabase.rpc('build_audience', {
-        p_filters: cleaned,
+        p_filters: cleaned as any,
         p_save: true,
       });
 
       const { data, error } = await supabase.rpc('search_audience', {
-        p_filters: cleaned,
+        p_filters: cleaned as any,
         p_page: safePage,
         p_page_size: safePageSize,
       });
@@ -231,7 +231,7 @@ export default function AudienceBuilder({ onAudienceSaved }: AudienceBuilderProp
         };
         const cleaned = pruneEmpty(filters) ?? {};
         const { data: builtRunId, error: buildError } = await supabase.rpc('build_audience', {
-          p_filters: cleaned,
+          p_filters: cleaned as any,
           p_save: true,
         });
         if (buildError || !builtRunId) {
