@@ -171,39 +171,11 @@ export default function AudienceBuilder({ onAudienceSaved }: AudienceBuilderProp
       const safePage = Math.max(1, page || 1);
       const safePageSize = Math.max(10, Math.min(200, pageSize || 20));
 
-      // Save the full audience run while also fetching the paginated preview
-      const buildPromise = supabase.rpc('build_audience', {
-        p_filters: cleaned as any,
-        p_save: true,
-      });
-
       const { data, error } = await supabase.rpc('search_audience', {
         p_filters: cleaned as any,
         p_page: safePage,
         p_page_size: safePageSize,
       });
-
-      if (error) {
-        console.error('Error previewing audience:', error);
-        toast.error(`Preview failed: ${error.message}`);
-        return;
-      }
-
-      setPreviewResults(data || []);
-      if (data && data.length > 0) {
-        setTotalCount(data[0].total_count);
-      } else {
-        setTotalCount(0);
-      }
-      setCurrentPage(page);
-
-      const { data: newRunId, error: runError } = await buildPromise;
-      if (runError || !newRunId) {
-        console.error('Error saving audience run:', runError);
-        setRunId(null);
-      } else {
-        setRunId(newRunId);
-      }
     } catch (error) {
       console.error('Error:', error);
       toast.error('Failed to preview audience');
@@ -214,6 +186,7 @@ export default function AudienceBuilder({ onAudienceSaved }: AudienceBuilderProp
 
   const onFiltersChange = useCallback(() => {
     setCurrentPage(1);
+    setRunId(null);
     previewAudience(1);
   }, [previewAudience]);
 
