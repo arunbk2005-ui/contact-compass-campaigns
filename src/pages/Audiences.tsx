@@ -20,6 +20,8 @@ import AudienceBuilder from "@/components/AudienceBuilder";
 const allocationSchema = z.object({
   campaign_id: z.string().min(1, "Please select a campaign"),
   allocated_count: z.string().min(1, "Please enter allocation count"),
+  file_name: z.string().min(1, "Please enter file name"),
+  description: z.string().optional(),
 });
 
 type AllocationData = z.infer<typeof allocationSchema>;
@@ -134,7 +136,72 @@ export default function Audiences() {
     if (!selectedRun) return;
 
     try {
-      const { error } = await supabase
+      // First, create the campaign file
+      const { data: campaignFile, error: fileError } = await supabase
+        .from('campaign_files')
+        .insert({
+          campaign_id: data.campaign_id,
+          file_name: data.file_name,
+          description: data.description,
+          total_contacts: parseInt(data.allocated_count),
+        })
+        .select()
+        .single();
+
+      if (fileError || !campaignFile) {
+        console.error('Error creating campaign file:', fileError);
+        toast.error('Failed to create campaign file');
+        return;
+      }
+
+      // Get the audience results for this allocation
+      const { data: audienceData, error: audienceError } = await supabase
+        .rpc('get_audience_results', { p_run_id: selectedRun.id })
+        .limit(parseInt(data.allocated_count));
+
+      if (audienceError) {
+        console.error('Error fetching audience data:', audienceError);
+        toast.error('Failed to fetch audience data for allocation');
+        return;
+      }
+
+      // Insert the contacts into campaign_file_contacts
+      if (audienceData && audienceData.length > 0) {
+        const contactsToInsert = audienceData.map((contact: any) => ({
+          campaign_file_id: campaignFile.id,
+          contact_id: contact.contact_id,
+          company_id: contact.company_id,
+          first_name: contact.first_name,
+          last_name: contact.last_name,
+          email: contact.email,
+          phone: contact.phone,
+          company_name: contact.company_name,
+          city: contact.city,
+          state: contact.state,
+          industry: contact.industry,
+          job_level: contact.job_level,
+          department: contact.department,
+        }));
+
+        const { error: contactsError } = await supabase
+          .from('campaign_file_contacts')
+          .insert(contactsToInsert);
+
+        if (contactsError) {
+          console.error('Error inserting campaign file contacts:', contactsError);
+          toast.error('Failed to allocate contacts to campaign file');
+          return;
+        }
+
+        // Update the campaign file with actual allocated count
+        await supabase
+          .from('campaign_files')
+          .update({ allocated_contacts: contactsToInsert.length })
+          .eq('id', campaignFile.id);
+      }
+
+      // Finally, record the allocation
+      const { error: allocationError } = await supabase
         .from('campaign_audience_allocations')
         .insert({
           run_id: selectedRun.id,
@@ -142,13 +209,13 @@ export default function Audiences() {
           allocated_count: parseInt(data.allocated_count),
         });
 
-      if (error) {
-        console.error('Error allocating audience:', error);
-        toast.error('Failed to allocate audience to campaign');
+      if (allocationError) {
+        console.error('Error recording allocation:', allocationError);
+        toast.error('Failed to record allocation');
         return;
       }
 
-      toast.success('Audience allocated to campaign successfully');
+      toast.success(`Campaign file "${data.file_name}" created with ${audienceData?.length || 0} contacts`);
       setShowAllocationDialog(false);
       allocationForm.reset();
     } catch (error) {
@@ -330,9 +397,10 @@ export default function Audiences() {
       <Dialog open={showAllocationDialog} onOpenChange={setShowAllocationDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Allocate Audience to Campaign</DialogTitle>
+            <DialogTitle>Allocate Audience to Campaign File</DialogTitle>
             <DialogDescription>
-              Allocate contacts from "{selectedRun?.name || 'Untitled Run'}" to a campaign
+              Create a campaign file with contacts from "{selectedRun?.name || 'Untitled Run'}" 
+              ({selectedRun?.total_results.toLocaleString()} total contacts available)
             </DialogDescription>
           </DialogHeader>
           <Form {...allocationForm}>
@@ -364,6 +432,40 @@ export default function Audiences() {
 
               <FormField
                 control={allocationForm.control}
+                name="file_name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Campaign File Name</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="Enter file name (e.g., Q1_Lead_List)" 
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={allocationForm.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description (Optional)</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="Brief description of this campaign file" 
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={allocationForm.control}
                 name="allocated_count"
                 render={({ field }) => (
                   <FormItem>
@@ -386,7 +488,7 @@ export default function Audiences() {
                   Cancel
                 </Button>
                 <Button type="submit">
-                  Allocate
+                  Create Campaign File
                 </Button>
               </div>
             </form>

@@ -181,6 +181,112 @@ export type Database = {
           },
         ]
       }
+      campaign_file_contacts: {
+        Row: {
+          allocated_at: string
+          campaign_file_id: string
+          city: string | null
+          company_id: number | null
+          company_name: string | null
+          contact_id: number
+          department: string | null
+          email: string | null
+          first_name: string | null
+          id: string
+          industry: string | null
+          job_level: string | null
+          last_name: string | null
+          phone: string | null
+          state: string | null
+        }
+        Insert: {
+          allocated_at?: string
+          campaign_file_id: string
+          city?: string | null
+          company_id?: number | null
+          company_name?: string | null
+          contact_id: number
+          department?: string | null
+          email?: string | null
+          first_name?: string | null
+          id?: string
+          industry?: string | null
+          job_level?: string | null
+          last_name?: string | null
+          phone?: string | null
+          state?: string | null
+        }
+        Update: {
+          allocated_at?: string
+          campaign_file_id?: string
+          city?: string | null
+          company_id?: number | null
+          company_name?: string | null
+          contact_id?: number
+          department?: string | null
+          email?: string | null
+          first_name?: string | null
+          id?: string
+          industry?: string | null
+          job_level?: string | null
+          last_name?: string | null
+          phone?: string | null
+          state?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_file_contacts_campaign_file_id_fkey"
+            columns: ["campaign_file_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaign_files: {
+        Row: {
+          allocated_contacts: number
+          campaign_id: string
+          created_at: string
+          description: string | null
+          file_name: string
+          id: string
+          status: string
+          total_contacts: number
+          updated_at: string
+        }
+        Insert: {
+          allocated_contacts?: number
+          campaign_id: string
+          created_at?: string
+          description?: string | null
+          file_name: string
+          id?: string
+          status?: string
+          total_contacts?: number
+          updated_at?: string
+        }
+        Update: {
+          allocated_contacts?: number
+          campaign_id?: string
+          created_at?: string
+          description?: string | null
+          file_name?: string
+          id?: string
+          status?: string
+          total_contacts?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_files_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaigns: {
         Row: {
           client_name: string
