@@ -176,6 +176,20 @@ export default function AudienceBuilder({ onAudienceSaved }: AudienceBuilderProp
         p_page: safePage,
         p_page_size: safePageSize,
       });
+
+      if (error) {
+        console.error('Error previewing audience:', error);
+        toast.error(`Preview failed: ${error.message}`);
+        return;
+      }
+
+      setPreviewResults(data || []);
+      if (data && data.length > 0) {
+        setTotalCount(data[0].total_count);
+      } else {
+        setTotalCount(0);
+      }
+      setCurrentPage(page);
     } catch (error) {
       console.error('Error:', error);
       toast.error('Failed to preview audience');
