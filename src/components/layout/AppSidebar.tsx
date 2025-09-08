@@ -36,6 +36,7 @@ const navigationItems = [
 ]
 
 const managementItems = [
+  { title: "Users", url: "/users", icon: Users },
   { title: "Industries", url: "/industries", icon: Factory },
   { title: "Cities", url: "/cities", icon: MapPin },
   { title: "Departments", url: "/departments", icon: Briefcase },
