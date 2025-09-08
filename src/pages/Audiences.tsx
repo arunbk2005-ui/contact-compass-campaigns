@@ -20,8 +20,6 @@ import AudienceBuilder from "@/components/AudienceBuilder";
 const allocationSchema = z.object({
   campaign_id: z.string().min(1, "Please select a campaign"),
   allocated_count: z.string().min(1, "Please enter allocation count"),
-  file_name: z.string().min(1, "Please enter file name"),
-  description: z.string().optional(),
 });
 
 type AllocationData = z.infer<typeof allocationSchema>;
@@ -136,86 +134,104 @@ export default function Audiences() {
     if (!selectedRun) return;
 
     try {
-      // First, create the campaign file
-      const { data: campaignFile, error: fileError } = await supabase
-        .from('campaign_files')
-        .insert({
-          campaign_id: data.campaign_id,
-          file_name: data.file_name,
-          description: data.description,
-          total_contacts: parseInt(data.allocated_count),
-        })
-        .select()
-        .single();
-
-      if (fileError || !campaignFile) {
-        console.error('Error creating campaign file:', fileError);
-        toast.error('Failed to create campaign file');
-        return;
-      }
-
-      // Get the audience results for this allocation
+      // Fetch audience data for the run with all joined details  
       const { data: audienceData, error: audienceError } = await supabase
         .rpc('get_audience_results', { p_run_id: selectedRun.id })
         .limit(parseInt(data.allocated_count));
 
       if (audienceError) {
         console.error('Error fetching audience data:', audienceError);
-        toast.error('Failed to fetch audience data for allocation');
+        toast.error('Failed to fetch audience data');
         return;
       }
 
-      // Insert the contacts into campaign_file_contacts
-      if (audienceData && audienceData.length > 0) {
-        const contactsToInsert = audienceData.map((contact: any) => ({
-          campaign_file_id: campaignFile.id,
-          contact_id: contact.contact_id,
-          company_id: contact.company_id,
-          first_name: contact.first_name,
-          last_name: contact.last_name,
-          email: contact.email,
-          phone: contact.phone,
-          company_name: contact.company_name,
-          city: contact.city,
-          state: contact.state,
-          industry: contact.industry,
-          job_level: contact.job_level,
-          department: contact.department,
-        }));
-
-        const { error: contactsError } = await supabase
-          .from('campaign_file_contacts')
-          .insert(contactsToInsert);
-
-        if (contactsError) {
-          console.error('Error inserting campaign file contacts:', contactsError);
-          toast.error('Failed to allocate contacts to campaign file');
-          return;
-        }
-
-        // Update the campaign file with actual allocated count
-        await supabase
-          .from('campaign_files')
-          .update({ allocated_contacts: contactsToInsert.length })
-          .eq('id', campaignFile.id);
+      if (!audienceData || audienceData.length === 0) {
+        toast.error('No audience data found for this run');
+        return;
       }
 
-      // Finally, record the allocation
-      const { error: allocationError } = await supabase
-        .from('campaign_audience_allocations')
-        .insert({
-          run_id: selectedRun.id,
+      // Get additional contact and company details for each contact
+      const contactIds = audienceData.map((item: any) => item.contact_id);
+      
+      // Fetch contact master details
+      const { data: contactDetails, error: contactError } = await supabase
+        .from('contact_master')
+        .select('*')
+        .in('contact_id', contactIds);
+
+      // Fetch company master details
+      const companyIds = audienceData.map((item: any) => item.company_id).filter(Boolean);
+      const { data: companyDetails, error: companyError } = await supabase
+        .from('organisation_master')
+        .select('*')
+        .in('company_id', companyIds);
+
+      if (contactError || companyError) {
+        console.error('Error fetching details:', contactError || companyError);
+        toast.error('Failed to fetch contact/company details');
+        return;
+      }
+
+      // Create allocations with complete data
+      const allocationsToInsert = audienceData.map((item: any) => {
+        const contactDetail = contactDetails?.find(c => c.contact_id === item.contact_id);
+        const companyDetail = companyDetails?.find(c => c.company_id === item.company_id);
+
+        return {
           campaign_id: data.campaign_id,
-          allocated_count: parseInt(data.allocated_count),
-        });
+          run_id: selectedRun.id,
+          contact_id: item.contact_id,
+          // Contact fields
+          first_name: item.first_name,
+          last_name: item.last_name,
+          salute: contactDetail?.salute || null,
+          designation: contactDetail?.designation || null,
+          department: item.department,
+          job_level: item.job_level,
+          specialization: contactDetail?.specialization || null,
+          official_email_id: contactDetail?.official_email_id || null,
+          personal_email_id: contactDetail?.personal_email_id || null,
+          direct_phone_number: contactDetail?.direct_phone_number || null,
+          mobile_number: contactDetail?.mobile_number || null,
+          gender: contactDetail?.gender || null,
+          email_optin: contactDetail?.Email_Optin || null,
+          // Company fields
+          company_id: item.company_id,
+          company_name: item.company_name,
+          industry: item.industry,
+          headquarters: companyDetail?.headquarters || null,
+          website: companyDetail?.website || null,
+          no_of_employees_total: companyDetail?.no_of_employees_total || null,
+          turn_over_inr_cr: companyDetail?.turn_over_inr_cr || null,
+          annual_revenue: companyDetail?.annual_revenue || null,
+          // Location fields
+          city_id: item.city_id,
+          city: item.city,
+          state: item.state,
+          postal_address_1: companyDetail?.postal_address_1 || null,
+          postal_address_2: companyDetail?.postal_address_2 || null,
+          postal_address_3: companyDetail?.postal_address_3 || null,
+          // Contact info
+          std: companyDetail?.std || null,
+          phone_1: companyDetail?.phone_1 || null,
+          phone_2: companyDetail?.phone_2 || null,
+          fax: companyDetail?.fax || null,
+          company_mobile_number: companyDetail?.company_mobile_number || null,
+          common_email_id: companyDetail?.common_email_id || null,
+        };
+      });
+
+      const { error: allocationError } = await supabase
+        .from('campaign_allocations')
+        .insert(allocationsToInsert);
 
       if (allocationError) {
-        console.error('Error recording allocation:', allocationError);
-        toast.error('Failed to record allocation');
+        console.error('Error creating campaign allocation:', allocationError);
+        toast.error('Failed to allocate audience to campaign');
         return;
       }
 
-      toast.success(`Campaign file "${data.file_name}" created with ${audienceData?.length || 0} contacts`);
+      toast.success(`Successfully allocated ${audienceData.length} contacts to campaign`);
       setShowAllocationDialog(false);
       allocationForm.reset();
     } catch (error) {
@@ -397,9 +413,9 @@ export default function Audiences() {
       <Dialog open={showAllocationDialog} onOpenChange={setShowAllocationDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Allocate Audience to Campaign File</DialogTitle>
+            <DialogTitle>Allocate Audience to Campaign</DialogTitle>
             <DialogDescription>
-              Create a campaign file with contacts from "{selectedRun?.name || 'Untitled Run'}" 
+              Allocate contacts from "{selectedRun?.name || 'Untitled Run'}" to a campaign
               ({selectedRun?.total_results.toLocaleString()} total contacts available)
             </DialogDescription>
           </DialogHeader>
@@ -430,39 +446,6 @@ export default function Audiences() {
                 )}
               />
 
-              <FormField
-                control={allocationForm.control}
-                name="file_name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Campaign File Name</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="Enter file name (e.g., Q1_Lead_List)" 
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={allocationForm.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Description (Optional)</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="Brief description of this campaign file" 
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
 
               <FormField
                 control={allocationForm.control}
@@ -488,7 +471,7 @@ export default function Audiences() {
                   Cancel
                 </Button>
                 <Button type="submit">
-                  Create Campaign File
+                  Allocate to Campaign
                 </Button>
               </div>
             </form>

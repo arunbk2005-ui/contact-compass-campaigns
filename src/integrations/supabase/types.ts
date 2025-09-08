@@ -136,6 +136,129 @@ export type Database = {
         }
         Relationships: []
       }
+      campaign_allocations: {
+        Row: {
+          allocated_at: string
+          annual_revenue: number | null
+          campaign_id: string
+          city: string | null
+          city_id: number | null
+          common_email_id: string | null
+          company_id: number | null
+          company_mobile_number: string | null
+          company_name: string | null
+          contact_id: number
+          department: string | null
+          designation: string | null
+          direct_phone_number: string | null
+          email_optin: string | null
+          fax: string | null
+          first_name: string | null
+          gender: string | null
+          headquarters: string | null
+          id: string
+          industry: string | null
+          job_level: string | null
+          last_name: string | null
+          mobile_number: string | null
+          no_of_employees_total: number | null
+          official_email_id: string | null
+          personal_email_id: string | null
+          phone_1: string | null
+          phone_2: string | null
+          postal_address_1: string | null
+          postal_address_2: string | null
+          postal_address_3: string | null
+          run_id: string
+          salute: string | null
+          specialization: string | null
+          state: string | null
+          std: string | null
+          turn_over_inr_cr: number | null
+          website: string | null
+        }
+        Insert: {
+          allocated_at?: string
+          annual_revenue?: number | null
+          campaign_id: string
+          city?: string | null
+          city_id?: number | null
+          common_email_id?: string | null
+          company_id?: number | null
+          company_mobile_number?: string | null
+          company_name?: string | null
+          contact_id: number
+          department?: string | null
+          designation?: string | null
+          direct_phone_number?: string | null
+          email_optin?: string | null
+          fax?: string | null
+          first_name?: string | null
+          gender?: string | null
+          headquarters?: string | null
+          id?: string
+          industry?: string | null
+          job_level?: string | null
+          last_name?: string | null
+          mobile_number?: string | null
+          no_of_employees_total?: number | null
+          official_email_id?: string | null
+          personal_email_id?: string | null
+          phone_1?: string | null
+          phone_2?: string | null
+          postal_address_1?: string | null
+          postal_address_2?: string | null
+          postal_address_3?: string | null
+          run_id: string
+          salute?: string | null
+          specialization?: string | null
+          state?: string | null
+          std?: string | null
+          turn_over_inr_cr?: number | null
+          website?: string | null
+        }
+        Update: {
+          allocated_at?: string
+          annual_revenue?: number | null
+          campaign_id?: string
+          city?: string | null
+          city_id?: number | null
+          common_email_id?: string | null
+          company_id?: number | null
+          company_mobile_number?: string | null
+          company_name?: string | null
+          contact_id?: number
+          department?: string | null
+          designation?: string | null
+          direct_phone_number?: string | null
+          email_optin?: string | null
+          fax?: string | null
+          first_name?: string | null
+          gender?: string | null
+          headquarters?: string | null
+          id?: string
+          industry?: string | null
+          job_level?: string | null
+          last_name?: string | null
+          mobile_number?: string | null
+          no_of_employees_total?: number | null
+          official_email_id?: string | null
+          personal_email_id?: string | null
+          phone_1?: string | null
+          phone_2?: string | null
+          postal_address_1?: string | null
+          postal_address_2?: string | null
+          postal_address_3?: string | null
+          run_id?: string
+          salute?: string | null
+          specialization?: string | null
+          state?: string | null
+          std?: string | null
+          turn_over_inr_cr?: number | null
+          website?: string | null
+        }
+        Relationships: []
+      }
       campaign_audience_allocations: {
         Row: {
           allocated_count: number
