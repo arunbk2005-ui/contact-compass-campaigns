@@ -44,15 +44,29 @@ export default function Users() {
   });
 
   // Fetch users with their roles
-  const { data: users = [], isLoading } = useQuery({
+  const { data: users = [], isLoading, error } = useQuery({
     queryKey: ["users"],
     queryFn: async () => {
+      console.log("Fetching users...");
+      
+      // First check if user is authenticated
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.error("No session found");
+        throw new Error("Not authenticated");
+      }
+
       const { data: profiles, error: profilesError } = await supabase
         .from("profiles")
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (profilesError) throw profilesError;
+      if (profilesError) {
+        console.error("Profile fetch error:", profilesError);
+        throw profilesError;
+      }
+
+      console.log("Fetched profiles:", profiles);
 
       // Fetch roles for each user
       const usersWithRoles = await Promise.all(
@@ -69,8 +83,10 @@ export default function Users() {
         })
       );
 
+      console.log("Users with roles:", usersWithRoles);
       return usersWithRoles;
     },
+    retry: 1,
   });
 
   // Create user mutation
@@ -237,6 +253,12 @@ export default function Users() {
               {isLoading ? (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center">Loading...</TableCell>
+                </TableRow>
+              ) : error ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center text-red-500">
+                    Error: {error.message}
+                  </TableCell>
                 </TableRow>
               ) : users.length === 0 ? (
                 <TableRow>

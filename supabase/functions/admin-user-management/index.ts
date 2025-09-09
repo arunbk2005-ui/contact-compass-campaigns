@@ -32,7 +32,13 @@ Deno.serve(async (req) => {
           }
         });
 
-        if (authError) throw authError;
+        if (authError) {
+          console.error('Auth error:', authError);
+          return new Response(
+            JSON.stringify({ error: authError.message }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
 
         // Add role if specified
         if (userData.role && authUser.user) {
@@ -43,7 +49,13 @@ Deno.serve(async (req) => {
               role: userData.role,
             });
           
-          if (roleError) throw roleError;
+          if (roleError) {
+            console.error('Role error:', roleError);
+            return new Response(
+              JSON.stringify({ error: roleError.message }),
+              { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          }
         }
 
         return new Response(
