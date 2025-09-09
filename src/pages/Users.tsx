@@ -76,34 +76,15 @@ export default function Users() {
   // Create user mutation
   const createUserMutation = useMutation({
     mutationFn: async (userData: UserForm) => {
-      // Create auth user first
-      const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
-        email: userData.email,
-        password: Math.random().toString(36).slice(-12), // Temporary password
-        email_confirm: true,
-        user_metadata: {
-          first_name: userData.first_name,
-          last_name: userData.last_name,
+      const { data, error } = await supabase.functions.invoke('admin-user-management', {
+        body: { 
+          action: 'create', 
+          userData: userData
         }
       });
 
-      if (authError) throw authError;
-
-      // Profile will be created automatically by trigger
-      
-      // Add role if specified
-      if (userData.role && authUser.user) {
-        const { error: roleError } = await supabase
-          .from("user_roles")
-          .insert({
-            user_id: authUser.user.id,
-            role: userData.role,
-          });
-        
-        if (roleError) throw roleError;
-      }
-
-      return authUser;
+      if (error) throw error;
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
@@ -143,7 +124,7 @@ export default function Users() {
           .from("user_roles")
           .insert({
             user_id: editingUser.user_id,
-            role: userData.role,
+            role: userData.role as "admin" | "user" | "moderator",
           });
         
         if (roleError) throw roleError;
@@ -166,8 +147,15 @@ export default function Users() {
   // Delete user mutation
   const deleteUserMutation = useMutation({
     mutationFn: async (userId: string) => {
-      const { error } = await supabase.auth.admin.deleteUser(userId);
+      const { data, error } = await supabase.functions.invoke('admin-user-management', {
+        body: { 
+          action: 'delete', 
+          userData: { userId }
+        }
+      });
+
       if (error) throw error;
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
