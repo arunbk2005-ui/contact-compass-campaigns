@@ -17,6 +17,7 @@ import EmpRanges from "./pages/EmpRanges";
 import Campaigns from "./pages/Campaigns";
 import Audiences from "./pages/Audiences";
 import Users from "./pages/Users";
+import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -43,6 +44,7 @@ const App = () => (
               <Route path="/comp-turnovers" element={<CompTurnovers />} />
               <Route path="/emp-ranges" element={<EmpRanges />} />
               <Route path="/users" element={<Users />} />
+              <Route path="/auth" element={<Auth />} />
               <Route path="/settings" element={<div className="p-6"><h1 className="text-2xl font-bold">Settings - Coming Soon</h1></div>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
