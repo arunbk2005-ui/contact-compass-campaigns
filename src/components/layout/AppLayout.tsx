@@ -4,43 +4,18 @@ import { AppSidebar } from "./AppSidebar"
 import { Button } from "@/components/ui/button"
 import { Bell, Search, User, LogOut } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
-import { useNavigate } from "react-router-dom"
 
 interface AppLayoutProps {
   children: React.ReactNode
 }
 
 export function AppLayout({ children }: AppLayoutProps) {
-  const { user, signOut, loading } = useAuth();
-  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
 
   const handleSignOut = async () => {
     await signOut();
-    navigate("/auth");
   };
-
-  // Use useEffect for navigation to avoid render-time navigation
-  React.useEffect(() => {
-    if (!loading && !user) {
-      navigate("/auth");
-    }
-  }, [user, loading, navigate]);
-
-  // Show loading or redirect while checking auth
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-2 text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return null; // Will redirect via useEffect
-  }
+  
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
@@ -84,5 +59,5 @@ export function AppLayout({ children }: AppLayoutProps) {
         </div>
       </div>
     </SidebarProvider>
-  )
+  );
 }
