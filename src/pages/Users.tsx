@@ -49,12 +49,8 @@ export default function Users() {
     queryFn: async () => {
       console.log("Fetching users...");
       
-      // First check if user is authenticated
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        console.error("No session found");
-        throw new Error("Not authenticated");
-      }
+      // Remove session check - let RLS handle auth
+      // The authentication is now handled at the layout level
 
       const { data: profiles, error: profilesError } = await supabase
         .from("profiles")

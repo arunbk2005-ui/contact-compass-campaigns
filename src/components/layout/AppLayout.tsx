@@ -1,3 +1,4 @@
+import React from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { AppSidebar } from "./AppSidebar"
 import { Button } from "@/components/ui/button"
@@ -10,7 +11,7 @@ interface AppLayoutProps {
 }
 
 export function AppLayout({ children }: AppLayoutProps) {
-  const { user, signOut } = useAuth();
+  const { user, signOut, loading } = useAuth();
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
@@ -18,10 +19,27 @@ export function AppLayout({ children }: AppLayoutProps) {
     navigate("/auth");
   };
 
-  // Redirect to auth if not authenticated
+  // Use useEffect for navigation to avoid render-time navigation
+  React.useEffect(() => {
+    if (!loading && !user) {
+      navigate("/auth");
+    }
+  }, [user, loading, navigate]);
+
+  // Show loading or redirect while checking auth
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-2 text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!user) {
-    navigate("/auth");
-    return null;
+    return null; // Will redirect via useEffect
   }
   return (
     <SidebarProvider>
