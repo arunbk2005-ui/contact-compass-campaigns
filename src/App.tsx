@@ -17,6 +17,7 @@ import EmpRanges from "./pages/EmpRanges";
 import Campaigns from "./pages/Campaigns";
 import Audiences from "./pages/Audiences";
 import Users from "./pages/Users";
+import ResetPassword from "./pages/ResetPassword";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -47,6 +48,7 @@ const App = () => (
             <Route path="/comp-turnovers" element={<ProtectedRoute><CompTurnovers /></ProtectedRoute>} />
             <Route path="/emp-ranges" element={<ProtectedRoute><EmpRanges /></ProtectedRoute>} />
             <Route path="/users" element={<ProtectedRoute><Users /></ProtectedRoute>} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/settings" element={<ProtectedRoute><div className="p-6"><h1 className="text-2xl font-bold">Settings - Coming Soon</h1></div></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>

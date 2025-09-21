@@ -179,6 +179,22 @@ export default function Users() {
     },
   });
 
+  // Reset password mutation
+  const resetPasswordMutation = useMutation({
+    mutationFn: async (email: string) => {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Password reset email sent successfully");
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to send reset email: ${error.message}`);
+    },
+  });
+
   const handleSubmit = (data: UserForm) => {
     if (editingUser) {
       updateUserMutation.mutate({ ...data, id: editingUser.id });
@@ -293,6 +309,15 @@ export default function Users() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center gap-2 justify-end">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => resetPasswordMutation.mutate(user.email)}
+                          disabled={resetPasswordMutation.isPending}
+                          title="Send password reset email"
+                        >
+                          🔑
+                        </Button>
                         <Button
                           variant="outline"
                           size="sm"
