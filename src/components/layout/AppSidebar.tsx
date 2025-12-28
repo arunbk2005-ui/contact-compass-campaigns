@@ -11,8 +11,11 @@ import {
   Factory,
   UserCheck,
   TrendingUp,
-  Briefcase
+  Briefcase,
+  LogOut
 } from "lucide-react"
+import { useAuth } from "@/hooks/useAuth"
+import { Button } from "@/components/ui/button"
 
 import {
   Sidebar,
@@ -48,6 +51,7 @@ const managementItems = [
 export function AppSidebar() {
   const { state } = useSidebar()
   const location = useLocation()
+  const { signOut } = useAuth()
   const currentPath = location.pathname
   const isCollapsed = state === "collapsed"
 
@@ -127,6 +131,17 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        <div className="p-4 border-t border-border mt-auto">
+          <Button 
+            variant="ghost" 
+            className="w-full justify-start text-muted-foreground hover:text-foreground"
+            onClick={signOut}
+          >
+            <LogOut className="w-4 h-4 mr-3" />
+            {!isCollapsed && <span>Logout</span>}
+          </Button>
+        </div>
       </SidebarContent>
     </Sidebar>
   )
