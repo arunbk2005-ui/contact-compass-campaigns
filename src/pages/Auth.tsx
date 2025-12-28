@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -8,11 +8,27 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "sonner";
 import { Building2, Loader2 } from "lucide-react";
 
+const DEV_BYPASS_KEY = "dev_auth_bypass";
+
+export const isDevBypassed = () => localStorage.getItem(DEV_BYPASS_KEY) === "true";
+export const clearDevBypass = () => localStorage.removeItem(DEV_BYPASS_KEY);
+
 const Auth = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (isDevBypassed()) {
+      navigate("/");
+      return;
+    }
+    
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) navigate("/");
+    });
+  }, [navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,6 +53,12 @@ const Auth = () => {
       toast.success("Logged in successfully");
       navigate("/");
     }
+  };
+
+  const handleDevBypass = () => {
+    localStorage.setItem(DEV_BYPASS_KEY, "true");
+    toast.success("Dev bypass enabled");
+    navigate("/");
   };
 
   return (
@@ -88,6 +110,20 @@ const Auth = () => {
               )}
             </Button>
           </form>
+          
+          <div className="mt-6 pt-4 border-t border-border">
+            <Button 
+              variant="outline" 
+              className="w-full text-muted-foreground"
+              onClick={handleDevBypass}
+            >
+              Skip Login (Dev Mode)
+            </Button>
+            <p className="text-xs text-muted-foreground text-center mt-2">
+              For development only - bypasses authentication
+            </p>
+          </div>
+          
           <p className="text-center text-sm text-muted-foreground mt-4">
             Contact your administrator if you need access
           </p>
