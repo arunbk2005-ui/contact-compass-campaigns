@@ -722,6 +722,42 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          email: string
+          first_name: string | null
+          id: string
+          is_active: boolean | null
+          last_name: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          email: string
+          first_name?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_name?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          email?: string
+          first_name?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_name?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -772,9 +808,15 @@ export type Database = {
           run_id: string
           state: string | null
         }[]
+        SetofOptions: {
+          from: "*"
+          to: "audience_results"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       get_contact_summary: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           new_30d: number
           total: number
@@ -808,10 +850,7 @@ export type Database = {
           total_count: number
         }[]
       }
-      safe_uuid_array: {
-        Args: { p: Json }
-        Returns: string[]
-      }
+      safe_uuid_array: { Args: { p: Json }; Returns: string[] }
       search_audience: {
         Args: { p_filters: Json; p_page?: number; p_page_size?: number }
         Returns: {
@@ -831,7 +870,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "user"
+      app_role: "admin" | "user" | "moderator"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -959,7 +998,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "user"],
+      app_role: ["admin", "user", "moderator"],
     },
   },
 } as const
